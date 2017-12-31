@@ -23,13 +23,18 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#ifndef _WIN32
-#include <unistd.h>
-#else
+#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+#ifdef _MSC_VER
 #include "getopt/getopt.h"
+#define F_OK 0
+#endif
+#endif
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <getopt.h>
 #endif
 
 #include "convenience.h"
