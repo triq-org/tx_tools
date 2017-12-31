@@ -1,0 +1,19 @@
+dist: trusty
+language: c
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    sources:
+    - trusty
+    - sourceline: 'ppa:myriadrf/drivers'
+    packages:
+    - libtool
+    - libusb-1.0.0-dev
+    - libsoapysdr-dev
+    - cmake
+    - make
+
+script: cmake . && make && sudo make install

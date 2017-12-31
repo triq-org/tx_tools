@@ -1,0 +1,11 @@
+*.o
+*.dSYM
+
+.*.swp
+
+**/*.o
+**/*.a
+
+build/
+
+tx_sdr
