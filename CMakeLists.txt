@@ -69,10 +69,10 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     ADD_DEFINITIONS(-Wdouble-promotion)
     ADD_DEFINITIONS(-Wformat-nonliteral)
     ADD_DEFINITIONS(-Wformat-security)
-    # for strdup
-    ADD_DEFINITIONS(-D_GNU_SOURCE)
-    # for struct sigaction
-    ADD_DEFINITIONS(-D_XOPEN_SOURCE)
+    # strdup, sigaction need -D_XOPEN_SOURCE=700 or -D_POSIX_C_SOURCE=200809L
+    # strsep, strcasecmp need
+    ADD_DEFINITIONS(-D_DEFAULT_SOURCE)
+    # older glibc might need -D_BSD_SOURCE -D_SVID_SOURCE -D_POSIX_C_SOURCE=200809C
 
     # CMake Release default for GCC/Clang is "-O3 -DNDEBUG"
     # set(CMAKE_C_FLAGS_RELEASE -O2)

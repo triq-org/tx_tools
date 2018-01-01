@@ -247,7 +247,7 @@ int main(int argc, char **argv)
     bool hasHwTime = SoapySDRDevice_hasHardwareTime(dev, "");
     fprintf(stderr, "SoapySDRDevice_hasHardwareTime: %d\n", hasHwTime);
     long long hwTime = SoapySDRDevice_getHardwareTime(dev, "");
-    fprintf(stderr, "SoapySDRDevice_getHardwareTime: %zd\n", hwTime);
+    fprintf(stderr, "SoapySDRDevice_getHardwareTime: %lld\n", hwTime);
 
     /* Set the sample rate */
     verbose_set_sample_rate(dev, SOAPY_SDR_TX, samp_rate);
