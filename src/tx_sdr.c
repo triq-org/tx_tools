@@ -269,14 +269,6 @@ int main(int argc, char **argv)
     /* Set the frequency */
     verbose_set_frequency(dev, SOAPY_SDR_TX, frequency);
 
-    if (NULL == gain_str) {
-        /* Enable automatic gain */
-        verbose_auto_gain(dev);
-    } else {
-        /* Enable manual gain */
-        verbose_gain_str_set(dev, gain_str);
-    }
-
     verbose_ppm_set(dev, ppm_error);
 
     if (strcmp(filename, "-") == 0) { /* Read samples from stdin */
@@ -297,6 +289,14 @@ int main(int argc, char **argv)
     if (SoapySDRDevice_activateStream(dev, stream, 0, 0, 0) != 0) {
         fprintf(stderr, "Failed to activate stream\n");
         exit(1);
+    }
+
+    if (NULL == gain_str) {
+        /* Enable automatic gain */
+        verbose_auto_gain(dev);
+    } else {
+        /* Enable manual gain */
+        verbose_gain_str_set(dev, gain_str);
     }
 
     size_t n_written = 0;
