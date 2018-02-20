@@ -37,6 +37,7 @@
 #include <getopt.h>
 #endif
 
+#include "argparse.h"
 #include "convenience.h"
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>

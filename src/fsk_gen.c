@@ -44,6 +44,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#include "argparse.h"
+
 #define DEFAULT_SAMPLE_RATE 2048000
 #define DEFAULT_BUF_LENGTH (1 * 16384)
 #define MINIMAL_BUF_LENGTH 512
@@ -193,25 +195,25 @@ int main(int argc, char **argv)
     while ((opt = getopt(argc, argv, "s:f:F:n:N:g:b:")) != -1) {
         switch (opt) {
         case 's':
-            sample_rate = atof(optarg); // TODO: atofs()
+            sample_rate = atofs(optarg);
             break;
         case 'f':
-            f1 = atof(optarg); // TODO: atofs()
+            f1 = atofs(optarg);
             break;
         case 'F':
-            f2 = atof(optarg); // TODO: atofs()
+            f2 = atofs(optarg);
             break;
         case 'n':
-            noise_floor = atof(optarg); // TODO: atofs()
+            noise_floor = atofs(optarg);
             break;
         case 'N':
-            noise_signal = atof(optarg); // TODO: atofs()
+            noise_signal = atofs(optarg);
             break;
         case 'g':
-            gain = atof(optarg); // TODO: atofs()
+            gain = atofs(optarg);
             break;
         case 'b':
-            buflen = atoi(optarg); // TODO: atois()
+            buflen = (size_t)atoft(optarg);
             break;
         default:
             usage();

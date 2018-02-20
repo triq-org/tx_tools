@@ -50,7 +50,7 @@ endif ()
 # Helper library
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-list(APPEND COMMON_SOURCES src/convenience/convenience.c)
+list(APPEND COMMON_SOURCES src/convenience/convenience.c src/argparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
 
@@ -96,7 +96,7 @@ endif()
 add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
-add_executable(fsk_gen src/fsk_gen.c)
+add_executable(fsk_gen src/fsk_gen.c src/argparse.c)
 
 ########################################################################
 # Install executables

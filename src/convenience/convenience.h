@@ -36,33 +36,6 @@ struct tm *localtime_r (const time_t *timer, struct tm *result);
 /* a collection of user friendly tools */
 
 /*!
- * Convert standard suffixes (k, M, G) to double
- *
- * \param s a string to be parsed
- * \return double
- */
-
-double atofs(char *s);
-
-/*!
- * Convert time suffixes (s, m, h) to double
- *
- * \param s a string to be parsed
- * \return seconds as double
- */
-
-double atoft(char *s);
-
-/*!
- * Convert percent suffixe (%) to double
- *
- * \param s a string to be parsed
- * \return double
- */
-
-double atofp(char *s);
-
-/*!
  * Set device frequency and report status on stderr
  *
  * \param dev the device handle
