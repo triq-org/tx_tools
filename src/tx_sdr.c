@@ -258,13 +258,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "Bandwidth set to: %.0f\n", bandwidth);
     }
 
+    /* Set the sample rate */
+    verbose_set_sample_rate(dev, SOAPY_SDR_TX, samp_rate);
+
+    /* note: needs sample rate set */
     bool hasHwTime = SoapySDRDevice_hasHardwareTime(dev, "");
     fprintf(stderr, "SoapySDRDevice_hasHardwareTime: %d\n", hasHwTime);
     long long hwTime = SoapySDRDevice_getHardwareTime(dev, "");
     fprintf(stderr, "SoapySDRDevice_getHardwareTime: %lld\n", hwTime);
-
-    /* Set the sample rate */
-    verbose_set_sample_rate(dev, SOAPY_SDR_TX, samp_rate);
 
     /* Set the frequency */
     verbose_set_frequency(dev, SOAPY_SDR_TX, frequency);
