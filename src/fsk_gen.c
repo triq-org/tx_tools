@@ -93,9 +93,9 @@ static double noise_signal = 0.05 * 2;
 static double gain = 1.0;
 static int fd = -1;
 
-static size_t buflen = DEFAULT_BUF_LENGTH;
-static size_t bufpos = 0;
-static uint8_t *buf;
+static size_t out_block_size = DEFAULT_BUF_LENGTH;
+static size_t out_block_pos = 0;
+static uint8_t *out_block;
 
 static double randf()
 {
@@ -110,13 +110,13 @@ static int bound(int x)
 static void signal_out(double i, double q)
 {
     double scale = 127.5; // scale to u8
-    uint8_t i8 = (uint8_t)bound((int)((i + 1) * gain * scale));
-    uint8_t q8 = (uint8_t)bound((int)((q + 1) * gain * scale));
-    buf[bufpos++] = i8;
-    buf[bufpos++] = q8;
-    if (bufpos == buflen) {
-        write(fd, buf, buflen);
-        bufpos = 0;
+    uint8_t i8 = (uint8_t)bound((int)((i + 1.0) * gain * scale));
+    uint8_t q8 = (uint8_t)bound((int)((q + 1.0) * gain * scale));
+    out_block[out_block_pos++] = i8;
+    out_block[out_block_pos++] = q8;
+    if (out_block_pos == out_block_size) {
+        write(fd, out_block, out_block_size);
+        out_block_pos = 0;
     }
 }
 
@@ -164,9 +164,9 @@ static void gen(char *outpath, double f1, double f2)
 
     fd = fileno(stdout); //io.open(outpath, mode="wb")
 
-    buf = malloc(buflen);
-    if (!buf) {
-        fprintf(stderr, "Can't allocate buffer of %zu bytes.", buflen);
+    out_block = malloc(out_block_size);
+    if (!out_block) {
+        fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", out_block_size);
         exit(1);
     }
 
@@ -182,7 +182,7 @@ static void gen(char *outpath, double f1, double f2)
         }
     }
 
-    free(buf);
+    free(out_block);
     //fd.close()
 }
 
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
             gain = atofs(optarg);
             break;
         case 'b':
-            buflen = (size_t)atoft(optarg);
+            out_block_size = (size_t)atofs(optarg);
             break;
         default:
             usage();
@@ -225,6 +225,14 @@ int main(int argc, char **argv)
         usage();
     } else {
         filename = argv[optind];
+    }
+
+    if (out_block_size < MINIMAL_BUF_LENGTH ||
+            out_block_size > MAXIMAL_BUF_LENGTH) {
+        fprintf(stderr, "Output block size wrong value, falling back to default\n");
+        fprintf(stderr, "Minimal length: %u\n", MINIMAL_BUF_LENGTH);
+        fprintf(stderr, "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
+        out_block_size = DEFAULT_BUF_LENGTH;
     }
 
 #ifndef _WIN32
