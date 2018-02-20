@@ -173,9 +173,13 @@ int main(int argc, char **argv)
     }
 
     if (argc <= optind) {
-        usage();
-    } else {
+        fprintf(stderr, "Input form stdin.\n");
+        filename = "-";
+    } else if (argc == optind + 1) {
         filename = argv[optind];
+    } else {
+        fprintf(stderr, "Extra arguments? \"%s\"...\n", argv[optind + 1]);
+        usage();
     }
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
