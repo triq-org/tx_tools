@@ -47,6 +47,12 @@
 #define MINIMAL_BUF_LENGTH 512
 #define MAXIMAL_BUF_LENGTH (256 * 16384)
 
+// format is 3-4 chars (plus null), compare as int.
+static int is_format_equal(const void *a, const void *b)
+{
+    return *(const uint32_t *)a == *(const uint32_t *)b;
+}
+
 static void usage(void)
 {
     fprintf(stderr,
@@ -191,10 +197,13 @@ int main(int argc, char **argv)
     }
 
     buffer = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS16));
-    if (input_format == SOAPY_SDR_CS8 || input_format == SOAPY_SDR_CU8) {
+    if (is_format_equal(input_format, SOAPY_SDR_CS8) || is_format_equal(input_format, SOAPY_SDR_CU8)) {
         buf8 = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS8));
-    } else if (input_format == SOAPY_SDR_CF32) {
+    } else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
         fbuf = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CF32));
+    } else {
+        fprintf(stderr, "Unhandled format '%s'.\n", input_format);
+        exit(1);
     }
 
     // TODO: allow choosing output format
@@ -298,24 +307,27 @@ int main(int argc, char **argv)
         long timeoutUs = 1000000; // 1 second
         size_t n_read = 0, i;
 
-        if (input_format == SOAPY_SDR_CS16) {
             n_read = fread(buffer, sizeof(int16_t) * 2, out_block_size, file);
+        if (is_format_equal(input_format, SOAPY_SDR_CS16)) {
             // The "native" format we read in, write out no conversion needed
-        } else if (input_format == SOAPY_SDR_CS8) {
             n_read = fread(buf8, sizeof(uint8_t) * 2, out_block_size, file);
             for (i = 0; i < n_read * 2; ++i) {
                 buffer[i] = (int16_t)(((int8_t)buf8[i] + 0.4) / 128.0 * fullScale);
+        } else if (is_format_equal(input_format, SOAPY_SDR_CS8)) {
             }
-        } else if (input_format == SOAPY_SDR_CU8) {
             n_read = fread(buf8, sizeof(uint8_t) * 2, out_block_size, file);
             for (i = 0; i < n_read * 2; ++i) {
                 buffer[i] = (int16_t)((buf8[i] + 127.4) / 128.0 * fullScale);
+        } else if (is_format_equal(input_format, SOAPY_SDR_CU8)) {
             }
-        } else if (input_format == SOAPY_SDR_CF32) {
             n_read = fread(fbuf, sizeof(float) * 2, out_block_size, file);
             for (i = 0; i < n_read * 2; ++i) {
                 buffer[i] = (int16_t)(fbuf[i] / 1.0f * (float)fullScale);
+        } else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
             }
+        } else {
+            fprintf(stderr, "Unsupported input format: %s\n", input_format);
+            exit(1);
         }
         if (n_read != (size_t)out_block_size) {
             fprintf(stderr, "Short read, exiting.\n");
