@@ -64,12 +64,10 @@ char * strsep(char **sp, char *sep)
 double atofs(char *s)
 /* standard suffixes */
 {
-	char last;
-	size_t len;
+	if (!s || !*s) return 0.0;
+	size_t len = strlen(s);
+	char last = s[len-1];
 	double suff = 1.0;
-	len = strlen(s);
-	last = s[len-1];
-	s[len-1] = '\0';
 	switch (last) {
 		case 'g':
 		case 'G':
@@ -81,22 +79,18 @@ double atofs(char *s)
 		case 'K':
 			suff *= 1e3;
 			suff *= atof(s);
-			s[len-1] = last;
 			return suff;
 	}
-	s[len-1] = last;
 	return atof(s);
 }
 
 double atoft(char *s)
 /* time suffixes, returns seconds */
 {
-	char last;
-	size_t len;
+	if (!s || !*s) return 0.0;
+	size_t len = strlen(s);
+	char last = s[len-1];
 	double suff = 1.0;
-	len = strlen(s);
-	last = s[len-1];
-	s[len-1] = '\0';
 	switch (last) {
 		case 'h':
 		case 'H':
@@ -107,30 +101,24 @@ double atoft(char *s)
 		case 's':
 		case 'S':
 			suff *= atof(s);
-			s[len-1] = last;
 			return suff;
 	}
-	s[len-1] = last;
 	return atof(s);
 }
 
 double atofp(char *s)
 /* percent suffixes */
 {
-	char last;
-	size_t len;
+	if (!s || !*s) return 0.0;
+	size_t len = strlen(s);
+	char last = s[len-1];
 	double suff = 1.0;
-	len = strlen(s);
-	last = s[len-1];
-	s[len-1] = '\0';
 	switch (last) {
 		case '%':
 			suff *= 0.01;
 			suff *= atof(s);
-			s[len-1] = last;
 			return suff;
 	}
-	s[len-1] = last;
 	return atof(s);
 }
 
