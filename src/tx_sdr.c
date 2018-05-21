@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     size_t out_block_size = DEFAULT_BUF_LENGTH;
     char *input_format = SOAPY_SDR_CU8;
 
-    while ((opt = getopt(argc, argv, "d:f:g:s:C:K:B:b:n:p:F:")) != -1) {
+    while ((opt = getopt(argc, argv, "d:f:g:a:s:C:K:B:b:n:p:F:")) != -1) {
         switch (opt) {
         case 'd':
             dev_query = optarg;
