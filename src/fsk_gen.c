@@ -162,7 +162,10 @@ static void gen(char *outpath, double f1, double f2)
     // 622 bit width
     // 8000 us packet gap
 
-    fd = fileno(stdout); //io.open(outpath, mode="wb")
+    if (!outpath || !*outpath || !strcmp(outpath, "-"))
+        fd = fileno(stdout);
+    else
+        fd = open(outpath, O_CREAT | O_TRUNC | O_WRONLY, 0644);
 
     out_block = malloc(out_block_size);
     if (!out_block) {
@@ -183,7 +186,8 @@ static void gen(char *outpath, double f1, double f2)
     }
 
     free(out_block);
-    //fd.close()
+    if (fd != fileno(stdout))
+        close(fd);
 }
 
 int main(int argc, char **argv)
