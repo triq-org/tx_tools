@@ -204,22 +204,22 @@ int main(int argc, char **argv)
         out_block_size = DEFAULT_BUF_LENGTH;
     }
 
-    const char *ext = strrchr(optarg, '.');
+    const char *ext = strrchr(filename, '.');
     if (!ext) {
         ext = "";
     }
     if (input_format) {
         // use forced format
-    } else if (strcasecmp(ext, "CU8") == 0) {
+    } else if (strcasecmp(ext, ".CU8") == 0) {
         input_format = SOAPY_SDR_CU8;
-    } else if (strcasecmp(ext, "CS8") == 0) {
+    } else if (strcasecmp(ext, ".CS8") == 0) {
         input_format = SOAPY_SDR_CS8;
-    } else if (strcasecmp(ext, "CS16") == 0) {
+    } else if (strcasecmp(ext, ".CS16") == 0) {
         input_format = SOAPY_SDR_CS16;
-    } else if (strcasecmp(ext, "CF32") == 0) {
+    } else if (strcasecmp(ext, ".CF32") == 0) {
         input_format = SOAPY_SDR_CF32;
     } else {
-        fprintf(stderr, "Unknown input format, falling back to CU8.\n");
+        fprintf(stderr, "Unknown input format \"%s\", falling back to CU8.\n", ext);
         input_format = SOAPY_SDR_CU8;
     }
 
@@ -337,6 +337,7 @@ int main(int argc, char **argv)
     }
 
     size_t n_written = 0;
+    int timeouts = 0;
     while (!do_exit) {
         const void *buffs[1];
         int flags = 0;
@@ -407,32 +408,37 @@ int main(int argc, char **argv)
         flags = 0;//SOAPY_SDR_HAS_TIME;
         for (size_t pos = 0; pos < n_samps && !do_exit;) {
             buffs[0] = &buf16[2 * pos];
-            r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps-pos, &flags, timeNs, timeoutUs);
+            r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps - pos, &flags, timeNs, timeoutUs);
             if (r < 0) {
-                fprintf(stderr, "WARNING: sync write failed. %s (%d)\n", SoapySDR_errToStr(r), r);
                 break;
             }
-            if (r >= 0)
-                pos += (size_t)r;
+            pos += (size_t)r;
         }
 
         //fprintf(stderr, "writeStream ret=%d (%zu of %zu), flags=%d, timeNs=%lld\n", r, n_samps, out_block_size, flags, timeNs);
         if (r >= 0) {
             n_written += n_samps;
+            timeouts = 0;
         } else {
             if (r == SOAPY_SDR_OVERFLOW) {
                 fprintf(stderr, "O");
                 fflush(stderr);
                 continue;
             }
+            if (r == SOAPY_SDR_TIMEOUT) {
+                if (++timeouts > 3) {
+                    fprintf(stderr, "ERROR: too many timeouts.\n");
+                    break;
+                }
+            }
             fprintf(stderr, "WARNING: sync write failed. %s (%d)\n", SoapySDR_errToStr(r), r);
         }
 
-        //size_t channel = 0;
-        //r = SoapySDRDevice_readStreamStatus(dev, stream, &channel, &flags, &timeNs, (long)(1e6 / samp_rate * out_block_size / 2));
-        //if (r && r != SOAPY_SDR_TIMEOUT) {
-        //    fprintf(stderr, "readStreamStatus %s (%d), channel=%zu flags=%d, timeNs=%lld\n", SoapySDR_errToStr(r), r, channel, flags, timeNs);
-        //}
+        size_t channel = 0;
+        r = SoapySDRDevice_readStreamStatus(dev, stream, &channel, &flags, &timeNs, (long)(1e6 / samp_rate * out_block_size / 2));
+        if (r && r != SOAPY_SDR_TIMEOUT) {
+            fprintf(stderr, "readStreamStatus %s (%d), channel=%zu flags=%d, timeNs=%lld\n", SoapySDR_errToStr(r), r, channel, flags, timeNs);
+        }
     }
     fprintf(stderr, "%zu samples written\n", n_written);
 

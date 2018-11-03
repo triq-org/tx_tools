@@ -409,7 +409,10 @@ int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **str
 
 	show_device_info(dev, direction);
 
-	if (SoapySDRDevice_setupStream(dev, streamOut, direction, format, NULL, 0, &stream_args) != 0) {
+	// request exactly the first channel, e.g. SoapyPlutoSDR has strange ideas about "the default channel"
+	size_t channels[] = {0};
+	size_t numChanns = 1;
+	if (SoapySDRDevice_setupStream(dev, streamOut, direction, format, channels, numChanns, &stream_args) != 0) {
 		fprintf(stderr, "SoapySDRDevice_setupStream failed\n");
 		return -3;
 	}
