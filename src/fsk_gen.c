@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>

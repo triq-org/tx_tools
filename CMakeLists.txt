@@ -97,6 +97,9 @@ add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
 add_executable(fsk_gen src/fsk_gen.c src/argparse.c)
+if(UNIX)
+target_link_libraries(fsk_gen m)
+endif()
 
 ########################################################################
 # Install executables

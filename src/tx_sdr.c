@@ -304,7 +304,8 @@ int main(int argc, char **argv)
     /* Set the frequency */
     verbose_set_frequency(dev, SOAPY_SDR_TX, frequency);
 
-    verbose_ppm_set(dev, ppm_error);
+    if (ppm_error)
+        verbose_ppm_set(dev, ppm_error);
 
     if (strcmp(filename, "-") == 0) { /* Read samples from stdin */
         fd = fileno(stdin);
