@@ -406,6 +406,7 @@ int main(int argc, char **argv)
         //timeNs =  hwTime + (0.001e9); //100ms
         timeNs = 0;//(long long)(n_written * 1e9 / samp_rate);
         flags = 0;//SOAPY_SDR_HAS_TIME;
+        r = 0; // clean ret should we exit
         for (size_t pos = 0; pos < n_samps && !do_exit;) {
             buffs[0] = &buf16[2 * pos];
             r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps - pos, &flags, timeNs, timeoutUs);
@@ -436,7 +437,10 @@ int main(int argc, char **argv)
 
         size_t channel = 0;
         r = SoapySDRDevice_readStreamStatus(dev, stream, &channel, &flags, &timeNs, (long)(1e6 / samp_rate * out_block_size / 2));
-        if (r && r != SOAPY_SDR_TIMEOUT) {
+        if (r == SOAPY_SDR_NOT_SUPPORTED) {
+            r = 0;
+        }
+        else if (r && r != SOAPY_SDR_TIMEOUT) {
             fprintf(stderr, "readStreamStatus %s (%d), channel=%zu flags=%d, timeNs=%lld\n", SoapySDR_errToStr(r), r, channel, flags, timeNs);
         }
     }
