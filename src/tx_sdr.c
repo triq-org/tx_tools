@@ -235,6 +235,8 @@ int main(int argc, char **argv)
         buf8 = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS8));
     } else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
         fbuf = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CF32));
+    } else if (is_format_equal(input_format, SOAPY_SDR_CS16)) {
+        // nothing to do
     } else {
         fprintf(stderr, "Unhandled format '%s'.\n", input_format);
         exit(1);
@@ -348,10 +350,11 @@ int main(int argc, char **argv)
 
         if (is_format_equal(input_format, SOAPY_SDR_CS16)) {
             n_read = read(fd, buf16, sizeof(int16_t) * 2 * out_block_size);
+            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint16_t) / 2;
             // The "native" format we read in, write out no conversion needed
         } else if (is_format_equal(input_format, SOAPY_SDR_CS8)) {
-            n_read = read(fd, buf8, sizeof(uint8_t) * 2 * out_block_size);
-            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint8_t) / 2;
+            n_read = read(fd, buf8, sizeof(int8_t) * 2 * out_block_size);
+            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(int8_t) / 2;
             for (i = 0; i < n_samps * 2; ++i) {
                 buf16[i] = (int16_t)(((int8_t)buf8[i] + 0.4) / 128.0 * fullScale);
             }
