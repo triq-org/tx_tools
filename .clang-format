@@ -1,8 +1,8 @@
 UseTab: Never
 IndentWidth: 4
 ContinuationIndentWidth: 8
-AlignAfterOpenBracket: false
-BreakBeforeBraces: Linux
+AlignAfterOpenBracket: DontAlign
+BreakBeforeBraces: Stroustrup
 AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false
 ColumnLimit: 0

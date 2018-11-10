@@ -1,5 +1,6 @@
 /*
- * tx_sdr, play data through SoapySDR TX
+ * tx_tools - tx_sdr, play data through SoapySDR TX
+ *
  * Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -164,13 +165,17 @@ int main(int argc, char **argv)
         case 'F':
             if (strcasecmp(optarg, "CU8") == 0) {
                 input_format = SOAPY_SDR_CU8;
-            } else if (strcasecmp(optarg, "CS8") == 0) {
+            }
+            else if (strcasecmp(optarg, "CS8") == 0) {
                 input_format = SOAPY_SDR_CS8;
-            } else if (strcasecmp(optarg, "CS16") == 0) {
+            }
+            else if (strcasecmp(optarg, "CS16") == 0) {
                 input_format = SOAPY_SDR_CS16;
-            } else if (strcasecmp(optarg, "CF32") == 0) {
+            }
+            else if (strcasecmp(optarg, "CF32") == 0) {
                 input_format = SOAPY_SDR_CF32;
-            } else {
+            }
+            else {
                 fprintf(stderr, "Unsupported output format: %s\n", optarg);
                 exit(1);
             }
@@ -189,9 +194,11 @@ int main(int argc, char **argv)
     if (argc <= optind) {
         fprintf(stderr, "Input form stdin.\n");
         filename = "-";
-    } else if (argc == optind + 1) {
+    }
+    else if (argc == optind + 1) {
         filename = argv[optind];
-    } else {
+    }
+    else {
         fprintf(stderr, "Extra arguments? \"%s\"...\n", argv[optind + 1]);
         usage();
     }
@@ -210,22 +217,28 @@ int main(int argc, char **argv)
     }
     if (input_format) {
         // use forced format
-    } else if (strcasecmp(ext, ".CU8") == 0) {
+    }
+    else if (strcasecmp(ext, ".CU8") == 0) {
         input_format = SOAPY_SDR_CU8;
-    } else if (strcasecmp(ext, ".CS8") == 0) {
+    }
+    else if (strcasecmp(ext, ".CS8") == 0) {
         input_format = SOAPY_SDR_CS8;
-    } else if (strcasecmp(ext, ".CS16") == 0) {
+    }
+    else if (strcasecmp(ext, ".CS16") == 0) {
         input_format = SOAPY_SDR_CS16;
-    } else if (strcasecmp(ext, ".CF32") == 0) {
+    }
+    else if (strcasecmp(ext, ".CF32") == 0) {
         input_format = SOAPY_SDR_CF32;
-    } else {
+    }
+    else {
         fprintf(stderr, "Unknown input format \"%s\", falling back to CU8.\n", ext);
         input_format = SOAPY_SDR_CU8;
     }
 
     if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
         output_format = input_format;
-    } else {
+    }
+    else {
         output_format = SOAPY_SDR_CS16;
     }
     output_format = SOAPY_SDR_CS16; // TODO
@@ -233,11 +246,14 @@ int main(int argc, char **argv)
     buf16 = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS16));
     if (is_format_equal(input_format, SOAPY_SDR_CS8) || is_format_equal(input_format, SOAPY_SDR_CU8)) {
         buf8 = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS8));
-    } else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
+    }
+    else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
         fbuf = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CF32));
-    } else if (is_format_equal(input_format, SOAPY_SDR_CS16)) {
+    }
+    else if (is_format_equal(input_format, SOAPY_SDR_CS16)) {
         // nothing to do
-    } else {
+    }
+    else {
         fprintf(stderr, "Unhandled format '%s'.\n", input_format);
         exit(1);
     }
@@ -315,8 +331,9 @@ int main(int argc, char **argv)
 #ifdef _WIN32
         _setmode(_fileno(stdin), _O_BINARY);
 #endif
-    } else {
-        fd = open(filename, O_RDONLY|O_NONBLOCK);
+    }
+    else {
+        fd = open(filename, O_RDONLY | O_NONBLOCK);
         if (fd < 0) {
             fprintf(stderr, "Failed to open %s\n", filename);
             goto out;
@@ -333,7 +350,8 @@ int main(int argc, char **argv)
     if (NULL == gain_str) {
         /* Enable automatic gain */
         verbose_auto_gain(dev);
-    } else {
+    }
+    else {
         /* Enable manual gain */
         verbose_gain_str_set(dev, gain_str);
     }
@@ -352,25 +370,29 @@ int main(int argc, char **argv)
             n_read = read(fd, buf16, sizeof(int16_t) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint16_t) / 2;
             // The "native" format we read in, write out no conversion needed
-        } else if (is_format_equal(input_format, SOAPY_SDR_CS8)) {
+        }
+        else if (is_format_equal(input_format, SOAPY_SDR_CS8)) {
             n_read = read(fd, buf8, sizeof(int8_t) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(int8_t) / 2;
             for (i = 0; i < n_samps * 2; ++i) {
                 buf16[i] = (int16_t)(((int8_t)buf8[i] + 0.4) / 128.0 * fullScale);
             }
-        } else if (is_format_equal(input_format, SOAPY_SDR_CU8)) {
+        }
+        else if (is_format_equal(input_format, SOAPY_SDR_CU8)) {
             n_read = read(fd, buf8, sizeof(uint8_t) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint8_t) / 2;
             for (i = 0; i < n_samps * 2; ++i) {
                 buf16[i] = (int16_t)((buf8[i] + 127.4) / 128.0 * fullScale);
             }
-        } else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
+        }
+        else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
             n_read = read(fd, fbuf, sizeof(float) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(float) / 2;
             for (i = 0; i < n_samps * 2; ++i) {
                 buf16[i] = (int16_t)(fbuf[i] / 1.0f * (float)fullScale);
             }
-        } else {
+        }
+        else {
             fprintf(stderr, "Unsupported input format: %s\n", input_format);
             exit(1);
         }
@@ -383,7 +405,8 @@ int main(int argc, char **argv)
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 fprintf(stderr, "Input read underflow.\n");
                 continue; // non-blocking
-            } else {
+            }
+            else {
                 fprintf(stderr, "Input read error (%d)\n", errno);
                 break; //error
             }
@@ -392,7 +415,8 @@ int main(int argc, char **argv)
             if (loops) {
                 lseek(fd, 0, SEEK_SET);
                 loops--;
-            } else {
+            }
+            else {
                 break; // EOF
             }
         }
@@ -407,9 +431,9 @@ int main(int argc, char **argv)
 
         //long long hwTime = SoapySDRDevice_getHardwareTime(dev, "");
         //timeNs =  hwTime + (0.001e9); //100ms
-        timeNs = 0;//(long long)(n_written * 1e9 / samp_rate);
-        flags = 0;//SOAPY_SDR_HAS_TIME;
-        r = 0; // clean ret should we exit
+        timeNs = 0; //(long long)(n_written * 1e9 / samp_rate);
+        flags = 0;  //SOAPY_SDR_HAS_TIME;
+        r = 0;      // clean ret should we exit
         for (size_t pos = 0; pos < n_samps && !do_exit;) {
             buffs[0] = &buf16[2 * pos];
             r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps - pos, &flags, timeNs, timeoutUs);
@@ -423,7 +447,8 @@ int main(int argc, char **argv)
         if (r >= 0) {
             n_written += n_samps;
             timeouts = 0;
-        } else {
+        }
+        else {
             if (r == SOAPY_SDR_OVERFLOW) {
                 fprintf(stderr, "O");
                 fflush(stderr);

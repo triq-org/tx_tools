@@ -26,60 +26,63 @@
 double atofs(char *s)
 /* standard suffixes */
 {
-	if (!s || !*s) return 0.0;
-	size_t len = strlen(s);
-	char last = s[len-1];
-	double suff = 1.0;
-	switch (last) {
-		case 'g':
-		case 'G':
-			suff *= 1e3;
-		case 'm':
-		case 'M':
-			suff *= 1e3;
-		case 'k':
-		case 'K':
-			suff *= 1e3;
-			suff *= atof(s);
-			return suff;
-	}
-	return atof(s);
+    if (!s || !*s)
+        return 0.0;
+    size_t len = strlen(s);
+    char last = s[len - 1];
+    double suff = 1.0;
+    switch (last) {
+    case 'g':
+    case 'G':
+        suff *= 1e3;
+    case 'm':
+    case 'M':
+        suff *= 1e3;
+    case 'k':
+    case 'K':
+        suff *= 1e3;
+        suff *= atof(s);
+        return suff;
+    }
+    return atof(s);
 }
 
 double atoft(char *s)
 /* time suffixes, returns seconds */
 {
-	if (!s || !*s) return 0.0;
-	size_t len = strlen(s);
-	char last = s[len-1];
-	double suff = 1.0;
-	switch (last) {
-		case 'h':
-		case 'H':
-			suff *= 60;
-		case 'm':
-		case 'M':
-			suff *= 60;
-		case 's':
-		case 'S':
-			suff *= atof(s);
-			return suff;
-	}
-	return atof(s);
+    if (!s || !*s)
+        return 0.0;
+    size_t len = strlen(s);
+    char last = s[len - 1];
+    double suff = 1.0;
+    switch (last) {
+    case 'h':
+    case 'H':
+        suff *= 60;
+    case 'm':
+    case 'M':
+        suff *= 60;
+    case 's':
+    case 'S':
+        suff *= atof(s);
+        return suff;
+    }
+    return atof(s);
 }
 
 double atofp(char *s)
 /* percent suffixes */
 {
-	if (!s || !*s) return 0.0;
-	size_t len = strlen(s);
-	char last = s[len-1];
-	double suff = 1.0;
-	switch (last) {
-		case '%':
-			suff *= 0.01;
-			suff *= atof(s);
-			return suff;
-	}
-	return atof(s);
+    if (!s || !*s)
+        return 0.0;
+    size_t len = strlen(s);
+    char last = s[len - 1];
+    double suff = 1.0;
+    switch (last) {
+    case '%':
+        suff *= 0.01;
+        suff *= atof(s);
+        return suff;
+    }
+    return atof(s);
 }
