@@ -1,0 +1,50 @@
+# Signal generator definition
+#
+# The basic block is a "tone". A tone is defined by frequency, attenuation, and duration.
+# A tone is enclosed in parens "(freq att dur)".
+#
+# A frequency is given in Hz or kHz. Giving a frequency implies 0dB, giving no frequency implies -100dB.
+# The attenuation is given in dB, which is dBFS: 0dB is maximum level, -100dB is always assumed silence.
+# The duration is given in units of seconds (s), milliseconds (ms), or microseconds (us).
+#
+# A symbol is a named sequence of tones. A symbol is defined in brackets "[symb tones and symbols...]".
+#
+# If you define the 0 and 1 symbol you can also use hex in braces "{...}" for output.
+#
+# Whitespace is ignored, except to separate arguments. Whitespace is space, tab, newline, and linefeed
+# Comments begin with a hash sign "#", can start anywhere and run to end of the line.
+# All symbols are one char, 7-bit ASCII. You can not use parens, brackets, braces, dot, or minus as symbols "()[]{}.-".
+
+# 2315 baud on/off rate and alternating 579 baud bit rate and 463 baud bit rate
+# Each transmission has a warmup of 17 to 32 pulse widths then 8 packets with
+# alternating 1:3 / 2:2 or 1:4 / 2:3 gap:pulse ratio for 0/1 bit in the packet
+# with a repeat gap of 4 pulse widths, i.e.:
+# 7408 us to 13092 us warmup pulse, 1672 us gap,
+# 0: 472 us gap, 1332 us pulse
+# 1: 920 us gap, 888 us pulse
+# 1672 us repeat gap,
+# 0: 472 us gap, 1784 us pulse
+# 1: 920 us gap, 1332 us pulse
+# Example codes are: 80042 Arm alarm, 80002 Disarm alarm,
+# 80008 System ping (every 15 minutes), 800a2, 800c2, 800e2 Motion event
+
+[~ (100kHz) ]                   # define a base frequency
+[X (~ -10dB 10ms) ]             # define a very long preamble pulse
+[_ (1672us) ]                   # define a long gap
+[0 (472us) (~ 1332us) ]         # define a 0 symbol as short gap and long pulse
+[1 (920us) (~ 888us) ]          # define a 1 symbol as long gap and short pulse
+[O (472us) (~ 1784us) ]         # define O symbol alternate 0 symbol with longer pulse
+[I (920us) (~ 1332us) ]         # define I symbol alternate 1 symbol with longer pulse
+
+______                          # output some silence
+X__                             # output preamble
+10000000000010100010_           # output payload
+IOOOOOOOOOOOIOIOOOIO_           # output alternate payload
+10000000000010100010_           # ...
+IOOOOOOOOOOOIOIOOOIO_
+10000000000010100010_
+IOOOOOOOOOOOIOIOOOIO_
+10000000000010100010_
+IOOOOOOOOOOOIOIOOOIO_
+_
+______

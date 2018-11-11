@@ -1,0 +1,42 @@
+# Signal generator definition
+#
+# The basic block is a "tone". A tone is defined by frequency, attenuation, and duration.
+# A tone is enclosed in parens "(freq att dur)".
+#
+# A frequency is given in Hz or kHz. Giving a frequency implies 0dB, giving no frequency implies -100dB.
+# The attenuation is given in dB, which is dBFS: 0dB is maximum level, -100dB is always assumed silence.
+# The duration is given in units of seconds (s), milliseconds (ms), or microseconds (us).
+#
+# A symbol is a named sequence of tones. A symbol is defined in brackets "[symb tones and symbols...]".
+#
+# If you define the 0 and 1 symbol you can also use hex in braces "{...}" for output.
+#
+# Whitespace is ignored, except to separate arguments. Whitespace is space, tab, newline, and linefeed.
+# Comments begin with a hash sign "#", can start anywhere and run to end of the line.
+# All symbols are one char, 7-bit ASCII. You can not use parens, brackets, braces, dot, or minus as symbols "()[]{}.-".
+
+# Prologue signal
+# PPM encoded
+# pulse: width 488 us
+# short gap width: 1952 us
+# long gap width: 3904 us
+# 37 pulses (36 bit), 8 repeats
+# packet gap: 9196 us
+#
+# the example payload is 0x5a7e0925a
+
+[~ (10kHz) ]                    # define a base frequency
+[_ (7244us) ]                   # define a long gap (15 clks)
+[0 (~488us) (1952us) ]          # define a 0 symbol as short pulse and short gap (1:4 clks)
+[1 (~488us) (3904us) ]          # define a 1 symbol as shor pulse and long gap (1:8 clks)
+
+_ _                             # output some silence and repeat the payload 8 times
+{5a7e0925a}0 _                  # this is 0101101001111110000010010010010110100 (37 bits)
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+{5a7e0925a}0 _
+_
