@@ -1,0 +1,39 @@
+# Signal generator definition
+#
+# The basic block is a "tone". A tone is defined by frequency, attenuation, and duration.
+# A tone is enclosed in parens "(freq att dur)".
+#
+# A frequency is given in Hz or kHz. Giving a frequency implies 0dB, giving no frequency implies -100dB.
+# The attenuation is given in dB, which is dBFS: 0dB is maximum level, -100dB is always assumed silence.
+# The duration is given in units of seconds (s), milliseconds (ms), or microseconds (us).
+#
+# A symbol is a named sequence of tones. A symbol is defined in brackets "[symb tones and symbols...]".
+#
+# If you define the 0 and 1 symbol you can also use hex in braces "{...}" for output.
+#
+# Whitespace is ignored, except to separate arguments. Whitespace is space, tab, newline, and linefeed
+# Comments begin with a hash sign "#", can start anywhere and run to end of the line.
+# All symbols are one char, 7-bit ASCII. You can not use parens, brackets, braces, dot, or minus as symbols "()[]{}.-".
+
+# 68 bits Differential Manchester encoded TPMS data with CRC-8.
+# FSK, e.g. 314.989 and 315.069
+# Half-bit width 100 us, preamble of 0xFC
+
+# example data of 0x79e15a06209f5034b, i.e.
+# 01111001111000010101101000000110001000001001111101010000001101001011
+# is transmitted as 0xfcb32b32ab4b2d554d52aad4ccb4aaacb52c, i.e.
+# 11111100 1011001100101011001100101010101101001011001011010101010101001101010100101010101011010100110011001011010010101010101011001011010100101100
+
+[_ (8000us) ]                   # define a long gap
+[0 (-40kHz 100us) ]             # define a space symbol as lower frequency
+[1 (40kHz 100us) ]              # define a mark symbol as upper frequency
+                                # define the payload
+
+_ _
+{HEX FC} {DMC 79e15a06209f5034b}
+_ _ _ _
+
+# To create a sample file use e.g.
+# code_gen -s 250k -r examples/pmv107j.txt pmv107j_315M_250k.cu8
+# To read and test a sample file use e.g.
+# rtl_433 -q -F json -R 0 -X 'pmv107j:FSK_PCM:100:100:250' -r pmv107j_315M_250k.cu8

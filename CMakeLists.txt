@@ -96,19 +96,34 @@ endif()
 add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
-add_executable(code_gen src/code_gen.c src/code_parse.c src/argparse.c)
+add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/argparse.c)
 if(UNIX)
 target_link_libraries(code_gen m)
 endif()
 
-add_executable(code_dump src/code_dump.c src/code_parse.c)
+add_executable(code_dump src/code_dump.c src/code_parse.c src/transform.c)
 
-add_executable(example_gen src/example_gen.c src/code_parse.c)
+add_executable(example_gen src/example_gen.c src/code_parse.c src/transform.c)
 
 add_executable(fast_osc_tests src/fast_osc_tests.c)
 if(UNIX)
 target_link_libraries(fast_osc_tests m)
 endif()
+
+add_executable(encode_ascii src/transform.c)
+target_compile_definitions(encode_ascii PRIVATE -DPROG_ASCII)
+
+add_executable(encode_hex src/transform.c)
+target_compile_definitions(encode_hex PRIVATE -DPROG_HEX)
+
+add_executable(encode_dmc src/transform.c)
+target_compile_definitions(encode_dmc PRIVATE -DPROG_DMC)
+
+add_executable(encode_mc src/transform.c)
+target_compile_definitions(encode_mc PRIVATE -DPROG_MC)
+
+add_executable(encode_imc src/transform.c)
+target_compile_definitions(encode_imc PRIVATE -DPROG_IMC)
 
 ########################################################################
 # Install executables

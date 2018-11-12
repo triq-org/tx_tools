@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "transform.h"
 #include "code_parse.h"
 
 static void skip_ws(char const **buf)
@@ -137,39 +138,26 @@ static void append_symbol(tone_t **t, symbol_t *s)
     }
 }
 
-static void append_hex(tone_t **t, char const **buf, symbol_t *s)
+static void append_transform(tone_t **t, char const **buf, symbol_t *s)
 {
-    char const *p = *buf;
-
-    symbol_t *zero = &s[(int)'0'];
-    symbol_t *one = &s[(int)'1'];
-
     // skip opening brace
-    if (*p == '{')
-        ++p;
-    skip_ws(&p);
-    while (p && *p != '}') {
-        char *end;
-        char h[2];
-        h[0] = *p++;
-        h[1] = '\0';
-        int v = (int)strtol(h, &end, 16);
-        if (p == end) {
-            fprintf(stderr, "Not a valid hex char: \"%s\"\n", h);
-        }
-        else {
-            (v & 0x8) ? append_symbol(t, one) : append_symbol(t, zero);
-            (v & 0x4) ? append_symbol(t, one) : append_symbol(t, zero);
-            (v & 0x2) ? append_symbol(t, one) : append_symbol(t, zero);
-            (v & 0x1) ? append_symbol(t, one) : append_symbol(t, zero);
-        }
-        skip_ws(&p);
+    if (**buf == '{')
+        ++(*buf);
+    
+    char const *end = strchr(*buf, '}');
+    if (!end)
+        return;
+    char *dup = strndup(*buf, (size_t)(end - *buf));
+    *buf = end + 1;
+    char *res = named_transform_dup(dup);
+    free(dup);
+
+    for (char const *b = res; *b; ++b) {
+        append_symbol(t, &s[(int)*b]);
     }
 
-    if (p && *p == '}')
-        ++p;
-
-    *buf = p;
+    if (res)
+        free(res);
 }
 
 static void parse_define(char const **buf, symbol_t *symbols)
@@ -258,7 +246,7 @@ symbol_t *parse_code(char const *code, symbol_t *symbols)
         }
         else if (*p == '{') {
             // hex output
-            append_hex(&out_tone, &p, symbols);
+            append_transform(&out_tone, &p, symbols);
         }
         else if (*p) {
             // symbol output
