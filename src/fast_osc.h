@@ -53,16 +53,16 @@ static double lut_sin(double x)
 // LUT oscillator
 
 typedef struct {
-    size_t freq;
+    ssize_t freq;
     size_t periode;
     size_t quarter;
-    double sample_rate;
+    size_t sample_rate;
     double lut_sin[1000];
 } lut_osc_t;
 
 static lut_osc_t osc_lut[10] = {{0}};
 
-static lut_osc_t *get_lut_osc(size_t f, size_t sample_rate)
+static lut_osc_t *get_lut_osc(ssize_t f, size_t sample_rate)
 {
     lut_osc_t *lut = osc_lut;
     while (lut->freq)
@@ -73,8 +73,9 @@ static lut_osc_t *get_lut_osc(size_t f, size_t sample_rate)
 
     lut->sample_rate = sample_rate;
     lut->freq = f;
-    size_t periode = sample_rate / f;
-    size_t quarter = periode / 4;
+    size_t abs_f = f < 0 ? (size_t)-f : (size_t)f;
+    size_t periode = sample_rate / abs_f;
+    size_t quarter = f < 0 ? periode * 3 / 4 : periode / 4;
     lut->periode = periode;
     lut->quarter = quarter;
     //printf("Freq %ld sin at %ld rate has periode %ld, quarter %ld\n", f, sample_rate, periode, quarter);

@@ -252,7 +252,7 @@ static void add_noise(size_t time_us, int db)
 
 static void add_sine(double freq_hz, size_t time_us, int db)
 {
-    lut_osc_t *lut = get_lut_osc((size_t)freq_hz, (size_t)sample_rate);
+    lut_osc_t *lut = get_lut_osc((ssize_t)freq_hz, (size_t)sample_rate);
 
     double att = db_to_mag(db);
     //size_t att_steps = 10;

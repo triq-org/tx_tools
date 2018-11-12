@@ -70,7 +70,7 @@ static double table_oscs(double f, double sample_rate, size_t t)
 
 // tests
 
-static void plain_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
+static void plain_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
     lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
@@ -84,7 +84,7 @@ static void plain_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size
     }
 }
 
-static void approx_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
+static void approx_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
     lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
@@ -98,7 +98,7 @@ static void approx_add_sine(double *buf, size_t freq_hz, size_t sample_rate, siz
     }
 }
 
-static void table_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
+static void table_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
     lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
@@ -112,7 +112,7 @@ static void table_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size
     }
 }
 
-static void osc_add_sine(double *buf, size_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
+static void osc_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
     lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
