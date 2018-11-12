@@ -95,15 +95,69 @@ static void sighandler(int signum)
 }
 #endif
 
+enum sample_format {
+    FORMAT_NONE,
+    FORMAT_CU8,
+    FORMAT_CS8,
+    FORMAT_CS16,
+    FORMAT_CF32,
+};
+
+static enum sample_format file_info(char **path)
+{
+    // return the last colon not followed by a backslash, otherwise NULL
+    char *colon = NULL;
+    char *next = strchr(*path, ':');
+    while (next && next[1] != '\\') {
+        colon = next;
+        next = strchr(next + 1, ':');
+    }
+    if (colon) {
+        *colon = '\0';
+        next = colon + 1;
+        colon = *path;
+        *path = next;
+    }
+
+    char const *ext = strchr(*path, '.');
+    if ((colon && (!strcmp(colon, "CU8") || !strcmp(colon, "cu8")))
+            || (ext && (!strcmp(ext, ".CU8") || !strcmp(ext, ".cu8")))) {
+        return FORMAT_CU8;
+    }
+    else if ((colon && (!strcmp(colon, "CS8") || !strcmp(colon, "cs8")))
+            || (ext && (!strcmp(ext, ".CS8") || !strcmp(ext, ".cs8")))) {
+        return FORMAT_CS8;
+    }
+    else if ((colon && (!strcmp(colon, "CS16") || !strcmp(colon, "cs16")))
+            || (ext && (!strcmp(ext, ".CS16") || !strcmp(ext, ".cs16")))) {
+        return FORMAT_CS16;
+    }
+    else if ((colon && (!strcmp(colon, "CF32") || !strcmp(colon, "cf32")))
+            || (ext && (!strcmp(ext, ".CF32") || !strcmp(ext, ".cf32")))) {
+        return FORMAT_CF32;
+    }
+
+    return FORMAT_NONE;
+}
+
 static double sample_rate = DEFAULT_SAMPLE_RATE;
 static double noise_floor = 0.1 * 2; // peak-to-peak
 static double noise_signal = 0.05 * 2; // peak-to-peak
 static double gain = 1.0;
 static int fd = -1;
 
+typedef union {
+    uint8_t *u8;
+    int8_t *s8;
+    int16_t *s16;
+    float *cf32;
+
+} out_block_t;
+
+static enum sample_format sample_format = FORMAT_NONE;
 static size_t out_block_size = DEFAULT_BUF_LENGTH;
 static size_t out_block_pos = 0;
-static uint8_t *out_block;
+static out_block_t out_block;
 
 static double randf(void)
 {
@@ -111,23 +165,69 @@ static double randf(void)
     return (double)rand() / RAND_MAX;
 }
 
-static int bound(int x)
+static int bound8(int x)
 {
     return x < 0 ? 0 : x > 255 ? 255 : x;
 }
 
-static void signal_out(double i, double q)
+static int bound16(int x)
+{
+    return x < 0 ? 0 : x > 65535 ? 65535 : x;
+}
+
+typedef void (*signal_out_fn)(double i, double q);
+
+static void signal_out_cu8(double i, double q)
 {
     double scale = 127.5; // scale to u8
-    uint8_t i8 = (uint8_t)bound((int)((i + 1.0) * scale));
-    uint8_t q8 = (uint8_t)bound((int)((q + 1.0) * scale));
-    out_block[out_block_pos++] = i8;
-    out_block[out_block_pos++] = q8;
+    uint8_t i8 = (uint8_t)bound8((int)((i + 1.0) * scale));
+    uint8_t q8 = (uint8_t)bound8((int)((q + 1.0) * scale));
+    out_block.u8[out_block_pos++] = i8;
+    out_block.u8[out_block_pos++] = q8;
     if (out_block_pos == out_block_size) {
-        write(fd, out_block, out_block_size);
+        write(fd, out_block.u8, out_block_size);
         out_block_pos = 0;
     }
 }
+
+static void signal_out_cs8(double i, double q)
+{
+    double scale = 127.5; // scale to s8
+    int8_t i8 = (int8_t)bound8((int)(i * scale));
+    int8_t q8 = (int8_t)bound8((int)(q * scale));
+    out_block.s8[out_block_pos++] = i8;
+    out_block.s8[out_block_pos++] = q8;
+    if (out_block_pos == out_block_size) {
+        write(fd, out_block.u8, out_block_size);
+        out_block_pos = 0;
+    }
+}
+
+static void signal_out_cs16(double i, double q)
+{
+    double scale = 32767.5; // scale to s16
+    int16_t i8 = (int16_t)bound16((int)(i * scale));
+    int16_t q8 = (int16_t)bound16((int)(q * scale));
+    out_block.s16[out_block_pos++] = i8;
+    out_block.s16[out_block_pos++] = q8;
+    if (out_block_pos * sizeof(int16_t) >= out_block_size) {
+        write(fd, out_block.u8, out_block_size);
+        out_block_pos = 0;
+    }
+}
+
+static void signal_out_cf32(double i, double q)
+{
+    out_block.cf32[out_block_pos++] = (float)i;
+    out_block.cf32[out_block_pos++] = (float)q;
+    if (out_block_pos * sizeof(float) >= out_block_size) {
+        write(fd, out_block.u8, out_block_size);
+        out_block_pos = 0;
+    }
+}
+
+static signal_out_fn signal_out;
+static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_cs8, signal_out_cs16, signal_out_cf32};
 
 static void add_noise(size_t time_us, int db)
 {
@@ -174,8 +274,8 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
     else
         fd = open(outpath, O_CREAT | O_TRUNC | O_WRONLY, 0644);
 
-    out_block = malloc(out_block_size);
-    if (!out_block) {
+    out_block.u8 = malloc(out_block_size);
+    if (!out_block.u8) {
         fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", out_block_size);
         exit(1);
     }
@@ -195,7 +295,7 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
     double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;
     printf("Time elapsed in ms: %f\n", elapsed);
 
-    free(out_block);
+    free(out_block.u8);
     if (fd != fileno(stdout))
         close(fd);
 }
@@ -280,6 +380,8 @@ int main(int argc, char **argv)
         usage();
     }
 
+    sample_format = file_info(&filename);
+
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {
         fprintf(stderr, "Output block size wrong value, falling back to default\n");
@@ -301,6 +403,7 @@ int main(int argc, char **argv)
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
 #endif
 
+    signal_out = format_out[sample_format];
     srand(rand_seed);
     gen(filename, symbols, base_f);
     free_symbols(symbols);
