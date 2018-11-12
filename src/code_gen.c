@@ -244,18 +244,18 @@ static void add_sine(double freq_hz, size_t time_us, int db)
     lut_osc_t *lut = get_lut_osc((size_t)freq_hz, (size_t)sample_rate);
 
     double att = db_to_mag(db);
-    size_t att_steps = 100;
+    //size_t att_steps = 10;
 
     size_t end = (size_t)(time_us * sample_rate / 1000000);
     for (size_t t = 0; t < end; ++t) {
 
         // ramp in and out
-        double att_in = t < att_steps ? (1.0 / att_steps) * t : 1.0;
-        double att_out = t + att_steps > end ? (1.0 / att_steps) * (end - t) : 1.0;
+        //double att_in = t < att_steps ? (1.0 / att_steps) * t : 1.0;
+        //double att_out = t + att_steps > end ? (1.0 / att_steps) * (end - t) : 1.0;
 
         // complex I/Q
-        double x = lut_oscc(lut, t) * gain * att * att_in * att_out;
-        double y = lut_oscs(lut, t) * gain * att * att_in * att_out;
+        double x = lut_oscc(lut, t) * gain * att;// * att_in * att_out;
+        double y = lut_oscs(lut, t) * gain * att;// * att_in * att_out;
 
         // disturb
         x += (randf() - 0.5) * noise_signal;
