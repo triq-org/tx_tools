@@ -36,9 +36,10 @@ static void skip_ws(char const **buf)
     // skip whitespace and comments
     while (p && (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '#')) {
         if (*p == '#')
-            while (p && p && *p != '\r' && *p != '\n')
+            while (*p && *p != '\r' && *p != '\n')
                 ++p;
-        ++p;
+        if (*p)
+            ++p;
     }
 
     *buf = p;
