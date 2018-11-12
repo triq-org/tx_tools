@@ -156,6 +156,7 @@ typedef union {
 
 static enum sample_format sample_format = FORMAT_NONE;
 static size_t out_block_size = DEFAULT_BUF_LENGTH;
+static size_t out_block_len = 0;
 static size_t out_block_pos = 0;
 static out_block_t out_block;
 
@@ -184,9 +185,10 @@ static void signal_out_cu8(double i, double q)
     uint8_t q8 = (uint8_t)bound8((int)((q + 1.0) * scale));
     out_block.u8[out_block_pos++] = i8;
     out_block.u8[out_block_pos++] = q8;
-    if (out_block_pos == out_block_size) {
+    out_block_len += 2 * sizeof(uint8_t);
+    if (out_block_len >= out_block_size) {
         write(fd, out_block.u8, out_block_size);
-        out_block_pos = 0;
+        out_block_pos = out_block_len = 0;
     }
 }
 
@@ -197,9 +199,10 @@ static void signal_out_cs8(double i, double q)
     int8_t q8 = (int8_t)bound8((int)(q * scale));
     out_block.s8[out_block_pos++] = i8;
     out_block.s8[out_block_pos++] = q8;
-    if (out_block_pos == out_block_size) {
+    out_block_len += 2 * sizeof(int8_t);
+    if (out_block_len >= out_block_size) {
         write(fd, out_block.u8, out_block_size);
-        out_block_pos = 0;
+        out_block_pos = out_block_len = 0;
     }
 }
 
@@ -210,9 +213,10 @@ static void signal_out_cs16(double i, double q)
     int16_t q8 = (int16_t)bound16((int)(q * scale));
     out_block.s16[out_block_pos++] = i8;
     out_block.s16[out_block_pos++] = q8;
-    if (out_block_pos * sizeof(int16_t) >= out_block_size) {
+    out_block_len += 2 * sizeof(int16_t);
+    if (out_block_len >= out_block_size) {
         write(fd, out_block.u8, out_block_size);
-        out_block_pos = 0;
+        out_block_pos = out_block_len = 0;
     }
 }
 
@@ -220,10 +224,17 @@ static void signal_out_cf32(double i, double q)
 {
     out_block.cf32[out_block_pos++] = (float)i;
     out_block.cf32[out_block_pos++] = (float)q;
-    if (out_block_pos * sizeof(float) >= out_block_size) {
+    out_block_len += 2 * sizeof(float);
+    if (out_block_len >= out_block_size) {
         write(fd, out_block.u8, out_block_size);
-        out_block_pos = 0;
+        out_block_pos = out_block_len = 0;
     }
+}
+
+static void signal_out_flush()
+{
+    write(fd, out_block.u8, out_block_len);
+    out_block_pos = out_block_len = 0;
 }
 
 static signal_out_fn signal_out;
@@ -231,7 +242,7 @@ static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_
 
 static void add_noise(size_t time_us, int db)
 {
-    size_t end =(size_t)(time_us * sample_rate / 1000000);
+    size_t end =(size_t)(time_us * sample_rate / 1000000.0);
     for (size_t t = 0; t < end; ++t) {
         double x = (randf() - 0.5) * noise_floor;
         double y = (randf() - 0.5) * noise_floor;
@@ -246,7 +257,7 @@ static void add_sine(double freq_hz, size_t time_us, int db)
     double att = db_to_mag(db);
     //size_t att_steps = 10;
 
-    size_t end = (size_t)(time_us * sample_rate / 1000000);
+    size_t end = (size_t)(time_us * sample_rate / 1000000.0);
     for (size_t t = 0; t < end; ++t) {
 
         // ramp in and out
@@ -290,6 +301,7 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
             add_sine(tone->hz, (size_t)tone->us, tone->db);
         }
     }
+    signal_out_flush();
 
     clock_t stop = clock();
     double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;
