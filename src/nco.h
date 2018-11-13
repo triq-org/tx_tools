@@ -48,21 +48,18 @@ static double nco_cos_ratio(double x)
     return nco_sin_lut[i];
 }
 
-static uint32_t nco_phase(ssize_t f, size_t sample_rate, size_t sample_pos)
-{
-    double d_phi = (double)f / (double)sample_rate; // delta phi per sample
-    d_phi = 1 + d_phi - (int)d_phi; // to shift negatives up
-    d_phi = d_phi * sample_pos;
-    d_phi = d_phi - (int)d_phi; // 4x faster than fmod
-    return (uint32_t)round(d_phi * (1LLU << 32));
-}
-
+// delta phase per sample
 static uint32_t nco_d_phase(ssize_t f, size_t sample_rate)
 {
-    double d_phi = (double)f / (double)sample_rate; // delta phi per sample
-    d_phi = 1 + d_phi - (int)d_phi; // to shift negatives up
-    d_phi = d_phi - (int)d_phi; // 4x faster than fmod
-    return (uint32_t)round(d_phi * (1LLU << 32));
+    long long ll = (1LL << 32) * f / (long long)sample_rate;
+    return (uint32_t)ll;
+}
+
+// delta phase per N samples
+static uint32_t nco_phase(ssize_t f, size_t sample_rate, size_t sample_pos)
+{
+    unsigned long long ll = sample_pos * nco_d_phase(f, sample_rate);
+    return (uint32_t)ll;
 }
 
 static double nco_sin(uint32_t phi)
