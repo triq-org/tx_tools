@@ -252,7 +252,8 @@ static void add_noise(size_t time_us, int db)
 
 static void add_sine(double freq_hz, size_t time_us, int db)
 {
-    lut_osc_t *lut = get_lut_osc((ssize_t)freq_hz, (size_t)sample_rate);
+    uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)sample_rate);
+    uint32_t phi = 0; //nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us);
 
     double att = db_to_mag(db);
     //size_t att_steps = 10;
@@ -265,8 +266,9 @@ static void add_sine(double freq_hz, size_t time_us, int db)
         //double att_out = t + att_steps > end ? (1.0 / att_steps) * (end - t) : 1.0;
 
         // complex I/Q
-        double x = lut_oscc(lut, t) * gain * att;// * att_in * att_out;
-        double y = lut_oscs(lut, t) * gain * att;// * att_in * att_out;
+        double x = nco_cos(phi) * gain * att;// * att_in * att_out;
+        double y = nco_sin(phi) * gain * att;// * att_in * att_out;
+        phi += d_phi;
 
         // disturb
         x += (randf() - 0.5) * noise_signal;
@@ -279,6 +281,7 @@ static void add_sine(double freq_hz, size_t time_us, int db)
 static void gen(char *outpath, symbol_t *symbol, double base_f[])
 {
     init_db_lut();
+    nco_init();
 
     if (!outpath || !*outpath || !strcmp(outpath, "-"))
         fd = fileno(stdout);

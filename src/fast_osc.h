@@ -34,20 +34,57 @@ static double approx_sin(double x)
     return x - x * x * x * c3 + x * x * x * x * x * c5 - x * x * x * x * x * x * x * c7;
 }
 
-// LUT sine
+// numerically controlled oscillator (NCO)
 
-static double lut_sin_table[256] = {0.0};
+static double nco_sin_lut[1024];
 
-static void init_lut_sin(void)
+static void nco_init(void)
 {
-    for (int i = 0; i < 256; ++i) {
-        lut_sin_table[i] = sin(2.0 * M_PI * i / 256.0);
+    for (int i = 0; i < 1024; ++i) {
+        nco_sin_lut[i] = sin(2.0 * M_PI * i / 1024.0);
     }
 }
 
-static double lut_sin(double x)
+static double nco_sin_ratio(double x)
 {
-    return lut_sin_table[(int)(x * 256)]; // use 4 quadrants
+    unsigned int i = (unsigned int)(x * 1023.999) % 1024; // round
+    return nco_sin_lut[i];
+}
+
+static double nco_cos_ratio(double x)
+{
+    unsigned int i = ((unsigned int)(x * 1023.999) + 256) % 1024; // round
+    return nco_sin_lut[i];
+}
+
+static uint32_t nco_phase(ssize_t f, size_t sample_rate, size_t sample_pos)
+{
+    double d_phi = (double)f / (double)sample_rate; // delta phi per sample
+    d_phi = 1 + d_phi - (int)d_phi; // to shift negatives up
+    d_phi = d_phi * sample_pos;
+    d_phi = d_phi - (int)d_phi; // 4x faster than fmod
+    return (uint32_t)round(d_phi * (1LLU << 32));
+}
+
+static uint32_t nco_d_phase(ssize_t f, size_t sample_rate)
+{
+    double d_phi = (double)f / (double)sample_rate; // delta phi per sample
+    d_phi = 1 + d_phi - (int)d_phi; // to shift negatives up
+    d_phi = d_phi - (int)d_phi; // 4x faster than fmod
+    return (uint32_t)round(d_phi * (1LLU << 32));
+}
+
+static double nco_sin(uint32_t phi)
+{
+    unsigned int i = ((phi + (1 << 21)) >> 22) & 0x3ff; // round
+    return nco_sin_lut[i];
+}
+
+static double nco_cos(uint32_t phi)
+{
+    unsigned int i = ((phi + (1 << 21)) >> 22) & 0x3ff; // round
+    i = (i + 256) & 0x3ff;
+    return nco_sin_lut[i];
 }
 
 // LUT oscillator
@@ -60,7 +97,7 @@ typedef struct {
     double lut_sin[1000];
 } lut_osc_t;
 
-static lut_osc_t osc_lut[10] = {{0}};
+static lut_osc_t osc_lut[10];
 
 static lut_osc_t *get_lut_osc(ssize_t f, size_t sample_rate)
 {

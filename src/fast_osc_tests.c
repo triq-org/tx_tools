@@ -52,22 +52,6 @@ static double approx_oscs(double f, double sample_rate, size_t t)
     return approx_sin(2.0 * M_PI * p);
 }
 
-// table sine
-
-static double table_oscc(double f, double sample_rate, size_t t)
-{
-    double p = f * t / sample_rate + 0.25;
-    p = p - (int)p;
-    return lut_sin(p); // mock
-}
-
-static double table_oscs(double f, double sample_rate, size_t t)
-{
-    double p = f * t / sample_rate;
-    p = p - (int)p;
-    return lut_sin(p);
-}
-
 // tests
 
 static void plain_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
@@ -98,14 +82,16 @@ static void approx_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, si
     }
 }
 
-static void table_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
+static void nco_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
-    lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
+    uint32_t d_phi = nco_d_phase(freq_hz, sample_rate);
+    uint32_t phi = 0;
     size_t end = (size_t)(time_us * sample_rate / 1000000);
     for (size_t t = 0; t < end; ++t) {
 
-        double x = table_oscc(freq_hz, sample_rate, t) * att_db;
-        double y = table_oscs(freq_hz, sample_rate, t) * att_db;
+        double x = nco_cos(phi) * att_db;
+        double y = nco_sin(phi) * att_db;
+        phi += d_phi;
 
         *buf++ = x;
         *buf++ = y;
@@ -158,7 +144,7 @@ int main(int argc, char **argv)
     }
 
     init_db_lut();
-    init_lut_sin();
+    nco_init();
 
     clock_t start, stop;
 
@@ -188,18 +174,18 @@ int main(int argc, char **argv)
     stop = clock();
     print_summary("Approx", start, stop, out_block, samples);
 
-    // Table
+    // NCO
 
     start = clock();
 
     for (size_t i = 0; i < LOOPS; ++i) {
-        table_add_sine(out_block, 10000, (size_t)sample_rate, samples, 1.0);
-        table_add_sine(out_block, 20000, (size_t)sample_rate, samples, 1.0);
-        table_add_sine(out_block, 30000, (size_t)sample_rate, samples, 1.0);
+        nco_add_sine(out_block, 10000, (size_t)sample_rate, samples, 1.0);
+        nco_add_sine(out_block, 20000, (size_t)sample_rate, samples, 1.0);
+        nco_add_sine(out_block, 30000, (size_t)sample_rate, samples, 1.0);
     }
 
     stop = clock();
-    print_summary("Table ", start, stop, out_block, samples);
+    print_summary("NCO   ", start, stop, out_block, samples);
 
     // LUT osc
 
