@@ -44,9 +44,8 @@
 #include <time.h>
 
 #include "argparse.h"
-
 #include "code_parse.h"
-#include "fast_osc.h"
+#include "nco.h"
 
 #define DEFAULT_SAMPLE_RATE 1000000
 #define DEFAULT_BUF_LENGTH (1 * 16384)

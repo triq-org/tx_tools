@@ -1,7 +1,7 @@
 /*
- * tx_tools - fast_osc, optimized oscillators
+ * tx_tools - numerically controlled oscillator (NCO)
  *
- * Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
+ * Copyright (C) 2018 by Christian Zuckschwerdt <zany@triq.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,21 +18,12 @@
  */
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include <math.h>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
-// Approx sine
-
-static double approx_sin(double x)
-{
-    double c3 = 1.0 / (3 * 2 * 1);
-    double c5 = 1.0 / (5 * 4 * 3 * 2 * 1);
-    double c7 = 1.0 / (7 * 6 * 5 * 4 * 3 * 2 * 1);
-    return x - x * x * x * c3 + x * x * x * x * x * c5 - x * x * x * x * x * x * x * c7;
-}
 
 // numerically controlled oscillator (NCO)
 
@@ -85,63 +76,6 @@ static double nco_cos(uint32_t phi)
     unsigned int i = ((phi + (1 << 21)) >> 22) & 0x3ff; // round
     i = (i + 256) & 0x3ff;
     return nco_sin_lut[i];
-}
-
-// LUT oscillator
-
-typedef struct {
-    ssize_t freq;
-    size_t periode;
-    size_t quarter;
-    size_t sample_rate;
-    double lut_sin[1000];
-} lut_osc_t;
-
-static lut_osc_t osc_lut[10];
-
-static lut_osc_t *get_lut_osc(ssize_t f, size_t sample_rate)
-{
-    lut_osc_t *lut = osc_lut;
-    while (lut->freq)
-        if (lut->freq == f)
-            return lut;
-        else
-            ++lut;
-
-    lut->sample_rate = sample_rate;
-    lut->freq = f;
-    size_t abs_f = f < 0 ? (size_t)-f : (size_t)f;
-    size_t periode = sample_rate / abs_f;
-    size_t quarter = f < 0 ? periode * 3 / 4 : periode / 4;
-    lut->periode = periode;
-    lut->quarter = quarter;
-    //printf("Freq %ld sin at %ld rate has periode %ld, quarter %ld\n", f, sample_rate, periode, quarter);
-    for (size_t i = 0; i < periode; ++i)
-        lut->lut_sin[i] = sin(f * 2.0 * M_PI * i / sample_rate);
-
-    return lut;
-}
-
-static double lut_oscc(lut_osc_t *lut, size_t t)
-{
-    return lut->lut_sin[(t + lut->quarter) % lut->periode];
-}
-
-static double lut_oscs(lut_osc_t *lut, size_t t)
-{
-    return lut->lut_sin[t % lut->periode];
-    //size_t i = t % lut->periode;
-    //if (i < 2 * lut->quarter) {
-    //    if (i < lut->quarter)
-    //        return lut->lut_sin[i];
-    //    else
-    //        return lut->lut_sin[2 * lut->quarter - i];
-    //} else {
-    //    if (i < 3 * lut->quarter)
-    //        return lut->lut_sin[i - 2 * lut->quarter];
-    //    else
-    //        return lut->lut_sin[4 * lut->quarter - i];
-    //}
 }
 
 // LUT dB

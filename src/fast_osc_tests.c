@@ -1,5 +1,5 @@
 /*
- * tx_tools - fast_osc, optimized oscillators
+ * tx_tools - tests for optimized oscillators
  *
  * Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
  *
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fast_osc.h"
+#include "nco.h"
 
 // plain
 
@@ -36,7 +36,15 @@ static double plain_oscs(double f, double sample_rate, size_t t)
     return sin(f * 2.0 * M_PI * t / sample_rate);
 }
 
-// approx
+// Approx sine
+
+static double approx_sin(double x)
+{
+    double c3 = 1.0 / (3 * 2 * 1);
+    double c5 = 1.0 / (5 * 4 * 3 * 2 * 1);
+    double c7 = 1.0 / (7 * 6 * 5 * 4 * 3 * 2 * 1);
+    return x - x * x * x * c3 + x * x * x * x * x * c5 - x * x * x * x * x * x * x * c7;
+}
 
 static double approx_oscc(double f, double sample_rate, size_t t)
 {
@@ -56,7 +64,6 @@ static double approx_oscs(double f, double sample_rate, size_t t)
 
 static void plain_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
-    lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
     for (size_t t = 0; t < end; ++t) {
 
@@ -70,7 +77,6 @@ static void plain_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, siz
 
 static void approx_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
 {
-    lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
     size_t end = (size_t)(time_us * sample_rate / 1000000);
     for (size_t t = 0; t < end; ++t) {
 
@@ -92,20 +98,6 @@ static void nco_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_
         double x = nco_cos(phi) * att_db;
         double y = nco_sin(phi) * att_db;
         phi += d_phi;
-
-        *buf++ = x;
-        *buf++ = y;
-    }
-}
-
-static void osc_add_sine(double *buf, ssize_t freq_hz, size_t sample_rate, size_t time_us, double att_db)
-{
-    lut_osc_t *lut = get_lut_osc(freq_hz, sample_rate);
-    size_t end = (size_t)(time_us * sample_rate / 1000000);
-    for (size_t t = 0; t < end; ++t) {
-
-        double x = lut_oscc(lut, t) * att_db;
-        double y = lut_oscs(lut, t) * att_db;
 
         *buf++ = x;
         *buf++ = y;
@@ -186,19 +178,6 @@ int main(int argc, char **argv)
 
     stop = clock();
     print_summary("NCO   ", start, stop, out_block, samples);
-
-    // LUT osc
-
-    start = clock();
-
-    for (size_t i = 0; i < LOOPS; ++i) {
-        osc_add_sine(out_block, 10000, (size_t)sample_rate, samples, 1.0);
-        osc_add_sine(out_block, 20000, (size_t)sample_rate, samples, 1.0);
-        osc_add_sine(out_block, 30000, (size_t)sample_rate, samples, 1.0);
-    }
-
-    stop = clock();
-    print_summary("Osc   ", start, stop, out_block, samples);
 
     free(out_block);
 }
