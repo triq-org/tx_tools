@@ -118,7 +118,7 @@ int main(int argc, char **argv)
     float *fbuf = NULL; // assumed 32-bit
     char *dev_query = "";
     double frequency = 0.0;
-    double fullScale = 2048.0;
+    double fullScale = 0.0;
     double masterclk = 0.0;
     double bandwidth = 0.0;
     double samp_rate = DEFAULT_SAMPLE_RATE;
@@ -235,13 +235,21 @@ int main(int argc, char **argv)
         input_format = SOAPY_SDR_CU8;
     }
 
+    r = verbose_device_search(dev_query, &dev, SOAPY_SDR_TX);
+    if (r != 0) {
+        fprintf(stderr, "Failed to open sdr device matching '%s'.\n", dev_query);
+        exit(1);
+    }
+
+    char const *nativeFormat = SoapySDRDevice_getNativeStreamFormat(dev, SOAPY_SDR_TX, 0, &fullScale);
+
+    // TODO: allow forced output format
     if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
         output_format = input_format;
     }
     else {
-        output_format = SOAPY_SDR_CS16;
+        output_format = nativeFormat;
     }
-    output_format = SOAPY_SDR_CS16; // TODO
 
     buf16 = malloc(out_block_size * SoapySDR_formatToSize(SOAPY_SDR_CS16));
     if (is_format_equal(input_format, SOAPY_SDR_CS8) || is_format_equal(input_format, SOAPY_SDR_CU8)) {
@@ -258,11 +266,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // TODO: allow choosing output format
-    r = verbose_device_search(dev_query, &dev, &stream, SOAPY_SDR_TX, output_format);
-
+    r = verbose_setup_stream(dev, &stream, SOAPY_SDR_TX, output_format);
     if (r != 0) {
-        fprintf(stderr, "Failed to open sdr device matching '%s'.\n", dev_query);
+        fprintf(stderr, "Failed to setup sdr stream '%s'.\n", output_format);
         exit(1);
     }
 
@@ -370,6 +376,10 @@ int main(int argc, char **argv)
             n_read = read(fd, buf16, sizeof(int16_t) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint16_t) / 2;
             // The "native" format we read in, write out no conversion needed
+            if (fullScale < 32767.0) // actually we expect 32768.0
+                for (i = 0; i < n_samps * 2; ++i) {
+                    buf16[i] *= fullScale / 32768.0;
+                }
         }
         else if (is_format_equal(input_format, SOAPY_SDR_CS8)) {
             n_read = read(fd, buf8, sizeof(int8_t) * 2 * out_block_size);
@@ -388,12 +398,13 @@ int main(int argc, char **argv)
         else if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
             n_read = read(fd, fbuf, sizeof(float) * 2 * out_block_size);
             n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(float) / 2;
-            for (i = 0; i < n_samps * 2; ++i) {
-                buf16[i] = (int16_t)(fbuf[i] / 1.0f * (float)fullScale);
-            }
+            if (!is_format_equal(output_format, SOAPY_SDR_CF32))
+                for (i = 0; i < n_samps * 2; ++i) {
+                    buf16[i] = (int16_t)(fbuf[i] / 1.0f * (float)fullScale);
+                }
         }
         else {
-            fprintf(stderr, "Unsupported input format: %s\n", input_format);
+            fprintf(stderr, "Unsupported input format: %s (output format: %s)\n", input_format, output_format);
             exit(1);
         }
         //fprintf(stderr, "Input was %zd bytes %zu samples\n", n_read, n_samps);
@@ -435,11 +446,15 @@ int main(int argc, char **argv)
         flags = 0;  //SOAPY_SDR_HAS_TIME;
         r = 0;      // clean ret should we exit
         for (size_t pos = 0; pos < n_samps && !do_exit;) {
-            buffs[0] = &buf16[2 * pos];
+            if (is_format_equal(output_format, SOAPY_SDR_CF32))
+                buffs[0] = &fbuf[2 * pos];
+            else
+                buffs[0] = &buf16[2 * pos];
             r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps - pos, &flags, timeNs, timeoutUs);
             if (r < 0) {
                 break;
             }
+            //usleep(r * 1e6 / samp_rate);
             pos += (size_t)r;
         }
 

@@ -18,8 +18,6 @@
 #define CONVENIENCE_H
 
 #ifdef _MSC_VER
-#define STDOUT_FILENO fileno(stdout)
-#define STDERR_FILENO fileno(stderr)
 #define bool _Bool
 #define false 0
 #define true 1
@@ -131,29 +129,23 @@ int verbose_ppm_set(SoapySDRDevice *dev, int ppm_error);
  *
  * \param s a string to be parsed
  * \param devOut device output returned
+ * \param direction RX/TX
+ * \return devOut, 0 if successful
+ */
+
+int verbose_device_search(char *s, SoapySDRDevice **devOut, const int direction);
+
+/*!
+ * Setup a stream on the device.
+ *
+ * \param dev the device handle
  * \param streamOut stream output returned
  * \param direction RX/TX
  * \param format stream format (such as SOAPY_SDR_CS16)
- * \return dev 0 if successful
+ * \return streamOut, 0 if successful
  */
 
-int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **streamOut, const int direction, const char *format);
-
-/*!
- * Start redirecting stdout to stderr to avoid unwanted stdout emissions.
- * Applications should call this if they want to use stdout for their own output,
- * before verbose_device_start(), and optionally stop after configuring all settings.
- *
- * \return Saved file descriptor to pass to suppress_stdout_stop()
- */
-int suppress_stdout_start(void);
-
-/*!
- * Stop redirecting stdout to stderr.
- *
- * \param tmp_stdout File descriptor from suppress_stdout_start()
- */
-void suppress_stdout_stop(int tmp_stdout);
+int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const int direction, const char *format);
 
 /*!
  * Parse a comma-separated list of key/value pairs into SoapySDRKwargs

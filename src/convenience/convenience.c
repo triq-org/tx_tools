@@ -368,29 +368,7 @@ static void show_device_info(SoapySDRDevice *dev, const int direction)
     fprintf(stderr, "Found native stream format: %s (full scale: %f)\n", native_stream_format, fullScale);
 }
 
-int suppress_stdout_start(void) {
-	// Hack to redirect stdout to stderr so it doesn't interfere with audio output on stdout
-	// see https://github.com/rxseger/rx_tools/pull/11#issuecomment-233168397
-	// because SoapySDR and UHD log there, TOOO: change in SoapySDR_Log?
-	// This is restored after stream setup, if it successful.
-	int tmp_stdout = dup(STDOUT_FILENO);
-	if (dup2(STDERR_FILENO, STDOUT_FILENO) != STDOUT_FILENO) {
-		perror("dup2 start");
-	}
-
-	return tmp_stdout;
-}
-
-void suppress_stdout_stop(int tmp_stdout) {
-	// Restore stdout back to stdout
-	fflush(stdout);
-	if (dup2(tmp_stdout, STDOUT_FILENO) != STDOUT_FILENO) {
-		perror("dup2 stop");
-	}
-}
-
-
-int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **streamOut, const int direction, const char *format)
+int verbose_device_search(char *s, SoapySDRDevice **devOut, const int direction)
 {
 	size_t device_count = 0;
 	size_t i = 0;
@@ -398,8 +376,6 @@ int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **str
 	char *s2;
 	char vendor[256], product[256], serial[256];
 	SoapySDRDevice *dev = NULL;
-
-	SoapySDRKwargs stream_args = {0};
 
 	dev = SoapySDRDevice_makeStrArgs(s);
 	if (!dev) {
@@ -409,6 +385,14 @@ int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **str
 
 	show_device_info(dev, direction);
 
+	*devOut = dev;
+	return 0;
+}
+
+int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const int direction, const char *format)
+{
+	SoapySDRKwargs stream_args = {0};
+
 	// request exactly the first channel, e.g. SoapyPlutoSDR has strange ideas about "the default channel"
 	size_t channels[] = {0};
 	size_t numChanns = 1;
@@ -417,7 +401,6 @@ int verbose_device_search(char *s, SoapySDRDevice **devOut, SoapySDRStream **str
 		return -3;
 	}
 
-	*devOut = dev;
 	return 0;
 }
 
