@@ -36,6 +36,7 @@ typedef enum stream_format {
 } stream_format_t;
 
 typedef struct tx_cmd {
+    int flag_abort;
     // device selection
     char const *dev_query;
     // device setup
@@ -65,6 +66,9 @@ typedef struct tx_cmd {
     // input from text
     char const *pulses;
 } tx_cmd_t;
+
+/// parse SoapySDR format string
+char const* tx_parse_soapy_format(char const *format);
 
 /// enumerate all devices
 void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);

@@ -83,7 +83,7 @@ int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str);
  * \return 0 on success
  */
 
-int verbose_ppm_set(SoapySDRDevice *dev, int ppm_error);
+int verbose_ppm_set(SoapySDRDevice *dev, double ppm_error);
 
 /*!
  * Find the closest matching device.

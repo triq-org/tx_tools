@@ -13,6 +13,7 @@ set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
 #local include directories first
 include_directories(${PROJECT_SOURCE_DIR}/src/convenience)
+include_directories(${PROJECT_SOURCE_DIR}/src/utils)
 
 #include local cmake modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -57,7 +58,7 @@ endif ()
 # Helper library
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-list(APPEND COMMON_SOURCES src/convenience/convenience.c src/argparse.c)
+list(APPEND COMMON_SOURCES src/convenience/convenience.c src/argparse.c src/tx_lib.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
@@ -77,6 +78,7 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     ADD_DEFINITIONS(-Wdouble-promotion)
     ADD_DEFINITIONS(-Wformat-nonliteral)
     ADD_DEFINITIONS(-Wformat-security)
+    ADD_DEFINITIONS(-Wno-padded)
     # strdup, sigaction need -D_XOPEN_SOURCE=700 or -D_POSIX_C_SOURCE=200809L
     # strsep, strcasecmp need
     ADD_DEFINITIONS(-D_DEFAULT_SOURCE)

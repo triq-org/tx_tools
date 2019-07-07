@@ -149,16 +149,16 @@ int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str)
 	return r;
 }
 
-int verbose_ppm_set(SoapySDRDevice *dev, int ppm_error)
+int verbose_ppm_set(SoapySDRDevice *dev, double ppm_error)
 {
 	int r;
-	if (ppm_error == 0) {
+	if (ppm_error == 0.0) {
 		return 0;}
-	r = SoapySDRDevice_setFrequencyComponent(dev, SOAPY_SDR_RX, 0, "CORR", (double)ppm_error, NULL);
+	r = SoapySDRDevice_setFrequencyComponent(dev, SOAPY_SDR_RX, 0, "CORR", ppm_error, NULL);
 	if (r != 0) {
 		fprintf(stderr, "WARNING: Failed to set ppm error.\n");
 	} else {
-		fprintf(stderr, "Tuner error set to %i ppm.\n", ppm_error);
+		fprintf(stderr, "Tuner error set to %f ppm.\n", ppm_error);
 	}
 	return r;
 }

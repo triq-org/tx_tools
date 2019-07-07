@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "convenience.h"
 #include <SoapySDR/Device.h>
@@ -37,6 +38,25 @@ SoapySDRDevice **SoapySDRDevice_make_each(SoapySDRKwargs *argsList, const size_t
 int SoapySDRDevice_unmake_each(SoapySDRDevice **devices, const size_t length);
 
 // helpers
+
+char const *tx_parse_soapy_format(char const *format)
+{
+    if (strcasecmp(optarg, "CU8") == 0) {
+        return SOAPY_SDR_CU8;
+    }
+    else if (strcasecmp(optarg, "CS8") == 0) {
+        return SOAPY_SDR_CS8;
+    }
+    else if (strcasecmp(optarg, "CS16") == 0) {
+        return SOAPY_SDR_CS16;
+    }
+    else if (strcasecmp(optarg, "CF32") == 0) {
+        return SOAPY_SDR_CF32;
+    }
+    else {
+        return NULL;
+    }
+}
 
 // format is 3-4 chars (plus null), compare as int.
 static int is_format_equal(const void *a, const void *b)
@@ -109,7 +129,6 @@ void tx_free_devices(tx_ctx_t *tx_ctx)
 
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
 {
-    int do_exit            = 0;
     SoapySDRDevice *dev    = NULL;
     SoapySDRStream *stream = NULL;
     int16_t *buf16         = NULL;
@@ -131,13 +150,13 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     r = verbose_device_search(tx->dev_query, &dev, SOAPY_SDR_TX);
     if (r != 0) {
         fprintf(stderr, "Failed to open sdr device matching '%s'.\n", tx->dev_query);
-        exit(1);
+        goto out;
     }
 
     char const *nativeFormat = SoapySDRDevice_getNativeStreamFormat(dev, SOAPY_SDR_TX, 0, &fullScale);
     if (!nativeFormat) {
         fprintf(stderr, "No TX capability '%s'.\n", tx->dev_query);
-        exit(1);
+        goto out;
     }
     size_t format_count;
     char **formats = SoapySDRDevice_getStreamFormats(dev, SOAPY_SDR_TX, 0, &format_count);
@@ -167,13 +186,14 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     }
     else {
         fprintf(stderr, "Unhandled format '%s'.\n", tx->input_format);
-        exit(1);
+        r = -1;
+        goto out;
     }
 
     r = verbose_setup_stream(dev, &stream, SOAPY_SDR_TX, tx->output_format);
     if (r != 0) {
         fprintf(stderr, "Failed to setup sdr stream '%s'.\n", tx->output_format);
-        exit(1);
+        goto out;
     }
 
     fprintf(stderr, "Using input format: %s (output format %s)\n", tx->input_format, tx->output_format);
@@ -227,16 +247,16 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     /* Set the center frequency */
     verbose_set_frequency(dev, SOAPY_SDR_TX, tx->center_frequency);
 
-    if (tx->ppm_error)
-        verbose_ppm_set(dev, tx->ppm_error);
+    verbose_ppm_set(dev, tx->ppm_error);
 
     verbose_gain_str_set(dev, "0");
 
     fprintf(stderr, "Writing samples in sync mode...\n");
     SoapySDRKwargs args = {0};
-    if (SoapySDRDevice_activateStream(dev, stream, 0, 0, 0) != 0) {
+    r = SoapySDRDevice_activateStream(dev, stream, 0, 0, 0);
+    if (r != 0) {
         fprintf(stderr, "Failed to activate stream\n");
-        exit(1);
+        goto out;
     }
 
     // TODO: save current gain
@@ -249,7 +269,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
 
     size_t n_written = 0;
     int timeouts     = 0;
-    while (!do_exit) {
+    while (!tx->flag_abort) {
         const void *buffs[1];
         int flags        = 0;
         long long timeNs = 0;
@@ -290,7 +310,8 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         }
         else {
             fprintf(stderr, "Unsupported input format: %s (output format: %s)\n", tx->input_format, tx->output_format);
-            exit(1);
+            r = -1;
+            goto out;
         }
         //fprintf(stderr, "Input was %zd bytes %zu samples\n", n_read, n_samps);
         if (n_read == -1) {
@@ -322,7 +343,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
 
         if ((tx->samples_to_write > 0) && (tx->samples_to_write < (uint32_t)n_samps)) {
             n_samps = tx->samples_to_write;
-            do_exit = 1;
+            tx->flag_abort = 1;
         }
 
         //long long hwTime = SoapySDRDevice_getHardwareTime(dev, "");
@@ -330,7 +351,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         timeNs = 0; //(long long)(n_written * 1e9 / tx->sample_rate);
         flags  = 0; //SOAPY_SDR_HAS_TIME;
         r      = 0; // clean ret should we exit
-        for (size_t pos = 0; pos < n_samps && !do_exit;) {
+        for (size_t pos = 0; pos < n_samps && !tx->flag_abort;) {
             if (is_format_equal(tx->output_format, SOAPY_SDR_CF32))
                 buffs[0] = &fbuf[2 * pos];
             else
@@ -389,21 +410,23 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     fprintf(stderr, "Waiting for TX to settle...\n");
     sleep(1);
 
-    if (do_exit)
+    if (tx->flag_abort)
         fprintf(stderr, "\nUser cancel, exiting...\n");
     else if (r)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    if (tx->stream_fd != fileno(stdin))
-        close(tx->stream_fd);
-
-    SoapySDRDevice_deactivateStream(dev, stream, 0, 0);
-    SoapySDRDevice_closeStream(dev, stream);
-
-    SoapySDRDevice_unmake(dev);
 out:
+    if (stream) {
+        SoapySDRDevice_deactivateStream(dev, stream, 0, 0);
+        SoapySDRDevice_closeStream(dev, stream);
+    }
+
+    if (dev)
+        SoapySDRDevice_unmake(dev);
+
     free(buf16);
     free(buf8);
     free(fbuf);
+
     return r >= 0 ? r : -r;
 }
