@@ -73,7 +73,7 @@ int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandw
  * \param gain_str string of gain element pairs (example LNA=40,VGA=20,AMP=0), or string of overall gain, in dB
  * \return 0 on success
  */
-int verbose_gain_str_set(SoapySDRDevice *dev, char *gain_str);
+int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str);
 
 /*!
  * Set the frequency correction value for the device and report status on stderr.
@@ -94,7 +94,7 @@ int verbose_ppm_set(SoapySDRDevice *dev, int ppm_error);
  * \return devOut, 0 if successful
  */
 
-int verbose_device_search(char *s, SoapySDRDevice **devOut, const int direction);
+int verbose_device_search(char const *s, SoapySDRDevice **devOut, const int direction);
 
 /*!
  * Setup a stream on the device.
@@ -114,6 +114,6 @@ int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const 
  * \param s String of key=value pairs, separated by commas
  * \param args Parsed keyword arguments
  */
-void parse_kwargs(char *s, SoapySDRKwargs *args);
+void parse_kwargs(char const *s, SoapySDRKwargs *args);
 
 #endif /*CONVENIENCE_H*/

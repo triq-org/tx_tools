@@ -106,7 +106,7 @@ int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandw
 	return r;
 }
 
-int verbose_gain_str_set(SoapySDRDevice *dev, char *gain_str)
+int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str)
 {
 	SoapySDRKwargs args = {0};
 	size_t i;
@@ -261,7 +261,7 @@ static void show_device_info(SoapySDRDevice *dev, const int direction)
     fprintf(stderr, "Found native stream format: %s (full scale: %f)\n", native_stream_format, fullScale);
 }
 
-int verbose_device_search(char *s, SoapySDRDevice **devOut, const int direction)
+int verbose_device_search(char const *s, SoapySDRDevice **devOut, const int direction)
 {
 	size_t device_count = 0;
 	size_t i = 0;
@@ -297,7 +297,7 @@ int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const 
 	return 0;
 }
 
-void parse_kwargs(char *s, SoapySDRKwargs *args)
+void parse_kwargs(char const *s, SoapySDRKwargs *args)
 {
 	char *copied, *cursor, *pair, *equals;
 
