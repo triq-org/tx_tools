@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef INCLUDE_TRANSFORM_H_
+#define INCLUDE_TRANSFORM_H_
+
 #include <stdlib.h>
 
 size_t encode_mc_thomas(char const *data, char *buf, size_t size);
@@ -32,3 +35,5 @@ size_t encode_ascii(char const *data, char *buf, size_t size);
 size_t encode_hex(char const *data, char *buf, size_t size);
 
 char *named_transform_dup(char const *arg);
+
+#endif /* INCLUDE_TRANSFORM_H_ */

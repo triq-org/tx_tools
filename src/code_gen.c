@@ -102,6 +102,23 @@ enum sample_format {
     FORMAT_CF32,
 };
 
+static char const *sample_format_str(enum sample_format format)
+{
+    switch (format) {
+    case FORMAT_NONE:
+        return "none";
+    case FORMAT_CU8:
+        return "CU8";
+    case FORMAT_CS8:
+        return "CS8";
+    case FORMAT_CS16:
+        return "CS16";
+    case FORMAT_CF32:
+        return "CF32";
+    }
+    return "unknown";
+}
+
 static enum sample_format file_info(char **path)
 {
     // return the last colon not followed by a backslash, otherwise NULL
@@ -118,7 +135,7 @@ static enum sample_format file_info(char **path)
         *path = next;
     }
 
-    char const *ext = strchr(*path, '.');
+    char const *ext = strrchr(*path, '.');
     if ((colon && (!strcmp(colon, "CU8") || !strcmp(colon, "cu8")))
             || (ext && (!strcmp(ext, ".CU8") || !strcmp(ext, ".cu8")))) {
         return FORMAT_CU8;
@@ -165,14 +182,19 @@ static double randf(void)
     return (double)rand() / RAND_MAX;
 }
 
-static int bound8(int x)
+static int bound_u8(int x)
 {
     return x < 0 ? 0 : x > 255 ? 255 : x;
 }
 
-static int bound16(int x)
+static int bound_u16(int x)
 {
     return x < 0 ? 0 : x > 65535 ? 65535 : x;
+}
+
+static int bound_i16(int x)
+{
+    return x < -32768 ? -32768 : x > 32767 ? 32767 : x;
 }
 
 typedef void (*signal_out_fn)(double i, double q);
@@ -180,8 +202,8 @@ typedef void (*signal_out_fn)(double i, double q);
 static void signal_out_cu8(double i, double q)
 {
     double scale = 127.5; // scale to u8
-    uint8_t i8 = (uint8_t)bound8((int)((i + 1.0) * scale));
-    uint8_t q8 = (uint8_t)bound8((int)((q + 1.0) * scale));
+    uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * scale));
+    uint8_t q8 = (uint8_t)bound_u8((int)((q + 1.0) * scale));
     out_block.u8[out_block_pos++] = i8;
     out_block.u8[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(uint8_t);
@@ -194,8 +216,8 @@ static void signal_out_cu8(double i, double q)
 static void signal_out_cs8(double i, double q)
 {
     double scale = 127.5; // scale to s8
-    int8_t i8 = (int8_t)bound8((int)(i * scale));
-    int8_t q8 = (int8_t)bound8((int)(q * scale));
+    int8_t i8 = (int8_t)bound_u8((int)(i * scale));
+    int8_t q8 = (int8_t)bound_u8((int)(q * scale));
     out_block.s8[out_block_pos++] = i8;
     out_block.s8[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int8_t);
@@ -208,8 +230,8 @@ static void signal_out_cs8(double i, double q)
 static void signal_out_cs16(double i, double q)
 {
     double scale = 32767.5; // scale to s16
-    int16_t i8 = (int16_t)bound16((int)(i * scale));
-    int16_t q8 = (int16_t)bound16((int)(q * scale));
+    int16_t i8 = (int16_t)bound_i16((int)(i * scale));
+    int16_t q8 = (int16_t)bound_i16((int)(q * scale));
     out_block.s16[out_block_pos++] = i8;
     out_block.s16[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int16_t);
@@ -295,6 +317,7 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
 
     clock_t start = clock();
 
+    size_t signal_length_us = 0;
     for (tone_t *tone = symbol->tone; tone->us && !do_exit; ++tone) {
         if (tone->db < -24) {
             add_noise((size_t)tone->us, tone->db);
@@ -302,12 +325,13 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
         else {
             add_sine(tone->hz, (size_t)tone->us, tone->db);
         }
+        signal_length_us += (size_t)tone->us;
     }
     signal_out_flush();
 
     clock_t stop = clock();
     double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;
-    printf("Time elapsed in ms: %f\n", elapsed);
+    printf("Time elapsed %g ms, signal lenght %g ms, speed %gx\n", elapsed, signal_length_us / 1000.0, signal_length_us / 1000.0 / elapsed);
 
     free(out_block.u8);
     if (fd != fileno(stdout))
@@ -395,6 +419,7 @@ int main(int argc, char **argv)
     }
 
     sample_format = file_info(&filename);
+    fprintf(stderr, "Output format %s.\n", sample_format_str(sample_format));
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {

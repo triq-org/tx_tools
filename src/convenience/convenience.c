@@ -106,125 +106,6 @@ int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandw
 	return r;
 }
 
-int verbose_direct_sampling(SoapySDRDevice *dev, int on)
-{
-	int r = 0;
-	char *value, *set_value;
-	if (on == 0)
-		value = "0";
-	else if (on == 1)
-		value = "1";
-	else if (on == 2)
-		value = "2";
-	else
-		return -1;
-	SoapySDRDevice_writeSetting(dev, "direct_samp", value);
-	set_value = SoapySDRDevice_readSetting(dev, "direct_samp");
-
-	if (set_value == NULL) {
-		fprintf(stderr, "WARNING: Failed to set direct sampling mode.\n");
-		return r;
-	}
-	if (atoi(set_value) == 0) {
-		fprintf(stderr, "Direct sampling mode disabled.\n");}
-	if (atoi(set_value) == 1) {
-		fprintf(stderr, "Enabled direct sampling mode, input 1/I.\n");}
-	if (atoi(set_value) == 2) {
-		fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
-	if (on == 3) {
-		fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
-	return r;
-}
-
-int verbose_offset_tuning(SoapySDRDevice *dev)
-{
-	int r = 0;
-	SoapySDRDevice_writeSetting(dev, "offset_tune", "true");
-	char *set_value = SoapySDRDevice_readSetting(dev, "offset_tune");
-
-	if (strcmp(set_value, "true") != 0) {
-		/* TODO: detection of failure modes
-		if ( r == -2 )
-			fprintf(stderr, "WARNING: Failed to set offset tuning: tuner doesn't support offset tuning!\n");
-		else if ( r == -3 )
-			fprintf(stderr, "WARNING: Failed to set offset tuning: direct sampling not combinable with offset tuning!\n");
-		else
-		*/
-			fprintf(stderr, "WARNING: Failed to set offset tuning.\n");
-	} else {
-		fprintf(stderr, "Offset tuning mode enabled.\n");
-	}
-	return r;
-}
-
-int verbose_auto_gain(SoapySDRDevice *dev)
-{
-	int r;
-	r = 0;
-	/* TODO: not bridged, https://github.com/pothosware/SoapyRTLSDR/search?utf8=✓&q=rtlsdr_set_tuner_gain_mode
-	r = rtlsdr_set_tuner_gain_mode(dev, 0);
-	if (r != 0) {
-		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-	} else {
-		fprintf(stderr, "Tuner gain set to automatic.\n");
-	}
-	*/
-
-	// Per-driver hacks TODO: clean this up
-	char *driver = SoapySDRDevice_getDriverKey(dev);
-	if (strcmp(driver, "RTLSDR") == 0) {
-		// For now, set 40.0 dB, high
-		// Note: 26.5 dB in https://github.com/librtlsdr/librtlsdr/blob/master/src/tuner_r82xx.c#L1067 - but it's not the same
-		// TODO: remove or change after auto-gain? https://github.com/pothosware/SoapyRTLSDR/issues/21 rtlsdr_set_tuner_gain_mode(dev, 0);
-		r = SoapySDRDevice_setGain(dev, SOAPY_SDR_RX, 0, 40.);
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-		} else {
-			fprintf(stderr, "Tuner gain semi-automatically set to 40 dB\n");
-		}
-
-	} else if (strcmp(driver, "HackRF") == 0) {
-		// HackRF has three gains LNA, VGA, and AMP, setting total distributes amongst, 116.0 dB seems to work well,
-		// even though it logs HACKRF_ERROR_INVALID_PARAM? https://github.com/rxseger/rx_tools/issues/9
-		// Total gain is distributed amongst all gains, 116 = 37,65,1; the LNA is OK (<40) but VGA is out of range (65 > 62)
-		// TODO: generic means to set all gains, of any SDR? string parsing LNA=#,VGA=#,AMP=#?
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "LNA", 40.); // max 40
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set LNA tuner gain.\n");
-		}
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "VGA", 20.); // max 65
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set VGA tuner gain.\n");
-		}
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "AMP", 0.); // on or off
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set AMP tuner gain.\n");
-		}
-
-	} else if (strcmp(driver, "LimeSDR-USB") == 0) {
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "LNA", 20.); // 0.0 - 30.0
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set LNA tuner gain.\n");
-		}
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "PGA", 10.); // -12.0 - 19.0
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set PGA tuner gain.\n");
-		}
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_RX, 0, "TIA", 2.); // 0.0 - 12.0
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set TIA tuner gain.\n");
-		}
-		r = SoapySDRDevice_setGainElement(dev, SOAPY_SDR_TX, 0, "PAD", 0.); // -52.0 - 0.0
-		if (r != 0) {
-			fprintf(stderr, "WARNING: Failed to set PAD tuner gain.\n");
-		}
-
-	}
-	// otherwise leave unset, hopefully the driver has good defaults
-
-	return r;
-}
-
 int verbose_gain_str_set(SoapySDRDevice *dev, char *gain_str)
 {
 	SoapySDRKwargs args = {0};
@@ -288,6 +169,7 @@ static void show_device_info(SoapySDRDevice *dev, const int direction)
 	char **antennas = NULL;
 	char **gains = NULL;
 	char **frequencies = NULL;
+	SoapySDRRange gainRange = {0};
 	SoapySDRRange *frequencyRanges = NULL;
 	SoapySDRRange *rates = NULL;
 	SoapySDRRange *bandwidths = NULL;
@@ -314,8 +196,19 @@ static void show_device_info(SoapySDRDevice *dev, const int direction)
 		fprintf(stderr, "%s ", antennas[i]);
 	}
 	fprintf(stderr, "\n");
+/*
+  Antennas: A
+  Corrections: DC removal
+  Full gain range: [0, 89] dB
+    PGA gain range: [0, 89] dB
+  Full freq range: [70, 6000] MHz
+    RF freq range: [70, 6000] MHz
+  Sample rates: 0.065105, 1, 2, 3, 4, 6, 7, 8, 9, 10 MSps
+  Filter bandwidths: 0.2, 1, 2, 3, 4, 6, 7, 8, 9, 10 MHz
+*/
+	gainRange = SoapySDRDevice_getGainRange(dev, direction, channel);
+	fprintf(stderr, "Gain range: %.0f - %.0f (step %.0f)\n", gainRange.minimum, gainRange.maximum, gainRange.step);
 
-	//SOAPY_SDR_API SoapySDRRange SoapySDRDevice_getGainRange(const SoapySDRDevice *device, const int direction, const size_t channel);
 	gains = SoapySDRDevice_listGains(dev, direction, channel, &len);
 	fprintf(stderr, "Found %zu gain(s): ", len);
 	for (i = 0; i < len; ++i) {

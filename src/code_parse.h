@@ -17,8 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CODEPARSE_H
-#define CODEPARSE_H
+#ifndef INCLUDE_CODEPARSE_H_
+#define INCLUDE_CODEPARSE_H_
 
 #define READ_CHUNK_SIZE 8192
 
@@ -53,4 +53,4 @@ char const *read_text_fd(int fd, char const *file_hint);
 
 char const *read_text_file(char const *filename);
 
-#endif /*CODEPARSE_H*/
+#endif /* INCLUDE_CODEPARSE_H_ */

@@ -66,45 +66,6 @@ int verbose_set_sample_rate(SoapySDRDevice *dev, const int direction, double sam
 
 int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandwidth);
 
-
-/*!
- * Enable or disable the direct sampling mode and report status on stderr
- *
- * \param dev the device handle
- * \param on 0 means disabled, 1 I-ADC input enabled, 2 Q-ADC input enabled
- * \return 0 on success
- */
-
-int verbose_direct_sampling(SoapySDRDevice *dev, int on);
-
-/*!
- * Enable offset tuning and report status on stderr
- *
- * \param dev the device handle
- * \return 0 on success
- */
-
-int verbose_offset_tuning(SoapySDRDevice *dev);
-
-/*!
- * Enable auto gain and report status on stderr
- *
- * \param dev the device handle
- * \return 0 on success
- */
-
-int verbose_auto_gain(SoapySDRDevice *dev);
-
-/*!
- * Set tuner gain and report status on stderr
- *
- * \param dev the device handle
- * \param gain in tenths of a dB
- * \return 0 on success
- */
-
-int verbose_gain_set(SoapySDRDevice *dev, int gain);
-
 /*!
  * Set tuner gain elements by a key/value string
  *

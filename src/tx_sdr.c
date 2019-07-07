@@ -192,7 +192,7 @@ int main(int argc, char **argv)
     }
 
     if (argc <= optind) {
-        fprintf(stderr, "Input form stdin.\n");
+        fprintf(stderr, "Input from stdin.\n");
         filename = "-";
     }
     else if (argc == optind + 1) {
@@ -242,6 +242,17 @@ int main(int argc, char **argv)
     }
 
     char const *nativeFormat = SoapySDRDevice_getNativeStreamFormat(dev, SOAPY_SDR_TX, 0, &fullScale);
+    if (!nativeFormat) {
+        fprintf(stderr, "No TX capability '%s'.\n", dev_query);
+        exit(1);
+    }
+    size_t format_count;
+    char **formats = SoapySDRDevice_getStreamFormats(dev, SOAPY_SDR_TX, 0, &format_count);
+    fprintf(stderr, "Supported formats:");
+    for (size_t i = 0; i < format_count; ++i) {
+        fprintf(stderr, " %s", formats[i]);
+    }
+    fprintf(stderr, "\n");
 
     // TODO: allow forced output format
     if (is_format_equal(input_format, SOAPY_SDR_CF32)) {
@@ -353,14 +364,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (NULL == gain_str) {
-        /* Enable automatic gain */
-        verbose_auto_gain(dev);
-    }
-    else {
-        /* Enable manual gain */
+    // TODO: save current gain
+    if (gain_str) {
         verbose_gain_str_set(dev, gain_str);
     }
+
+    size_t mtu = SoapySDRDevice_getStreamMTU(dev, stream);
+    fprintf(stderr, "Stream MTU: %u\n", (unsigned)mtu);
 
     size_t n_written = 0;
     int timeouts = 0;
@@ -450,7 +460,12 @@ int main(int argc, char **argv)
                 buffs[0] = &fbuf[2 * pos];
             else
                 buffs[0] = &buf16[2 * pos];
+
+            // flush TX buffer?
+            if (n_samps < out_block_size)
+                flags = SOAPY_SDR_END_BURST;
             r = SoapySDRDevice_writeStream(dev, stream, buffs, n_samps - pos, &flags, timeNs, timeoutUs);
+            //fprintf(stderr, "writeStream ret=%d (%zu of %zu in %zu), flags=%d, timeNs=%lld\n", r, n_samps - pos, n_samps, out_block_size, flags, timeNs);
             if (r < 0) {
                 break;
             }
@@ -458,7 +473,7 @@ int main(int argc, char **argv)
             pos += (size_t)r;
         }
 
-        //fprintf(stderr, "writeStream ret=%d (%zu of %zu), flags=%d, timeNs=%lld\n", r, n_samps, out_block_size, flags, timeNs);
+        //fprintf(stderr, "last writeStream ret=%d (%zu of %zu), flags=%d, timeNs=%lld\n", r, n_samps, out_block_size, flags, timeNs);
         if (r >= 0) {
             n_written += n_samps;
             timeouts = 0;
@@ -491,7 +506,7 @@ int main(int argc, char **argv)
 
     if (do_exit)
         fprintf(stderr, "\nUser cancel, exiting...\n");
-    else
+    else if (r)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
     if (fd != fileno(stdin))

@@ -4,6 +4,13 @@
 cmake_minimum_required(VERSION 2.8.0)
 project(tx_tools C)
 
+#select the release build type by default to get optimization flags
+if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE "Release")
+   message(STATUS "Build type not specified: defaulting to release.")
+endif(NOT CMAKE_BUILD_TYPE)
+set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
+
 #local include directories first
 include_directories(${PROJECT_SOURCE_DIR}/src/convenience)
 
@@ -78,6 +85,9 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     # set(CMAKE_C_FLAGS_RELEASE -O2)
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
+
+    # make use of ASAN
+    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
 endif()
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
     # make sure we don't accidentally copy more than an int
