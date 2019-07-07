@@ -58,6 +58,7 @@ endif ()
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 list(APPEND COMMON_SOURCES src/convenience/convenience.c src/argparse.c)
+list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
 
