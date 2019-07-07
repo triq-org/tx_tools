@@ -327,8 +327,15 @@ int main(int argc, char **argv)
         fprintf(stderr, "Bandwidth set to: %.0f\n", bandwidth);
     }
 
+    /* At SoapySDRDevice_setSampleRate the PlutoSDR will blast out garbage for 1.5s at full gain. */
+    /* tune away and wait */
+    verbose_set_frequency(dev, SOAPY_SDR_TX, 3e9);
+
     /* Set the sample rate */
     verbose_set_sample_rate(dev, SOAPY_SDR_TX, samp_rate);
+
+    fprintf(stderr, "Waiting for TX to settle...\n");
+    sleep(1);
 
     /* note: needs sample rate set */
     bool hasHwTime = SoapySDRDevice_hasHardwareTime(dev, "");
@@ -356,6 +363,8 @@ int main(int argc, char **argv)
             goto out;
         }
     }
+
+    verbose_gain_str_set(dev, "0");
 
     fprintf(stderr, "Writing samples in sync mode...\n");
     SoapySDRKwargs args = {0};
@@ -503,6 +512,16 @@ int main(int argc, char **argv)
         }
     }
     fprintf(stderr, "%zu samples written\n", n_written);
+
+    // TODO: restore previous gain
+    if (gain_str) {
+        //verbose_gain_str_set(dev, saved_gain_str);
+    }
+    verbose_gain_str_set(dev, "0");
+    verbose_set_frequency(dev, SOAPY_SDR_TX, 3e9);
+
+    fprintf(stderr, "Waiting for TX to settle...\n");
+    sleep(1);
 
     if (do_exit)
         fprintf(stderr, "\nUser cancel, exiting...\n");
