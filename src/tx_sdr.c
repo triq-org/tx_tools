@@ -40,7 +40,7 @@
 #include <getopt.h>
 #endif
 
-#include "argparse.h"
+#include "optparse.h"
 #include "tx_lib.h"
 #include "convenience.h"
 #include <SoapySDR/Device.h>
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
             tx.dev_query = optarg;
             break;
         case 'f':
-            tx.center_frequency = atofs(optarg);
+            tx.center_frequency = atod_metric(optarg, "-f: ");
             break;
         case 'g':
             tx.gain_str = optarg;
@@ -149,26 +149,26 @@ int main(int argc, char **argv)
             tx.antenna = optarg;
             break;
         case 's':
-            tx.sample_rate = atofs(optarg);
+            tx.sample_rate = atod_metric(optarg, "-s: ");
             break;
         case 'K':
-            tx.master_clock_rate = atofs(optarg);
+            tx.master_clock_rate = atod_metric(optarg, "-K: ");
             break;
         case 'B':
-            tx.bandwidth = atofs(optarg);
+            tx.bandwidth = atod_metric(optarg, "-B: ");
             break;
         case 'p':
-            tx.ppm_error = atoi(optarg);
+            tx.ppm_error = atod_metric(optarg, "-p: ");
             break;
         case 'b':
-            tx.block_size = (size_t)atof(optarg);
+            tx.block_size = atouint32_metric(optarg, "-b: ");
             break;
         case 'n':
             // each sample is one I/Q pair (half the count of I and Q bytes)
-            tx.samples_to_write = (size_t)atofs(optarg);
+            tx.samples_to_write = atouint32_metric(optarg, "-n: ");
             break;
         case 'l':
-            tx.loops = (unsigned)atoi(optarg);
+            tx.loops = atouint32_metric(optarg, "-l: ");
             break;
         case 'F':
             tx.input_format = tx_parse_soapy_format(optarg);

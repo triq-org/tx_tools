@@ -43,7 +43,7 @@
 
 #include <time.h>
 
-#include "argparse.h"
+#include "optparse.h"
 #include "code_parse.h"
 #include "nco.h"
 
@@ -338,18 +338,18 @@ static void gen(char *outpath, symbol_t *symbol, double base_f[])
         close(fd);
 }
 
-static double noise_pp_level(char *arg)
+static double noise_pp_level(char *arg, const char *error_hint)
 {
-    double level = atofs(arg);
+    double level = atod_metric(arg, error_hint);
     if (level < 0)
         level = pow(10.0, 1.0 / 20.0 * level);
     // correct for RMS to equal a sine
     return level * 2 * sqrt(1.0 / 2.0 * 3.0 / 2.0);
 }
 
-static double sine_pk_level(char *arg)
+static double sine_pk_level(char *arg, const char *error_hint)
 {
-    double level = atofs(arg);
+    double level = atod_metric(arg, error_hint);
     if (level <= 0)
         level = pow(10.0, 1.0 / 20.0 * level);
     return level;
@@ -368,22 +368,22 @@ int main(int argc, char **argv)
     while ((opt = getopt(argc, argv, "s:f:n:N:g:b:r:c:S:")) != -1) {
         switch (opt) {
         case 's':
-            sample_rate = atofs(optarg);
+            sample_rate = atod_metric(optarg, "-s: ");
             break;
         case 'f':
-            *next_f++ = atofs(optarg);
+            *next_f++ = atod_metric(optarg, "-f: ");
             break;
         case 'n':
-            noise_floor = noise_pp_level(optarg);
+            noise_floor = noise_pp_level(optarg, "-n: ");
             break;
         case 'N':
-            noise_signal = noise_pp_level(optarg);
+            noise_signal = noise_pp_level(optarg, "-N: ");
             break;
         case 'g':
-            gain = sine_pk_level(optarg);
+            gain = sine_pk_level(optarg, "-g: ");
             break;
         case 'b':
-            out_block_size = (size_t)atofs(optarg);
+            out_block_size = atouint32_metric(optarg, "-b: ");
             break;
         case 'r':
             symbols = parse_code_file(optarg, symbols);

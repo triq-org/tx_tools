@@ -58,7 +58,7 @@ endif ()
 # Helper library
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-list(APPEND COMMON_SOURCES src/convenience/convenience.c src/argparse.c src/tx_lib.c)
+list(APPEND COMMON_SOURCES src/convenience/convenience.c src/tx_lib.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
@@ -66,7 +66,7 @@ list(APPEND TX_TOOLS_LIBS common)
 ########################################################################
 # Compiler specific setup
 ########################################################################
-if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") AND NOT WIN32)
+if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
@@ -92,7 +92,7 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     # make use of ASAN
     set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
 endif()
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
     ADD_DEFINITIONS(-Weverything)
@@ -109,7 +109,7 @@ endif()
 add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
-add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/argparse.c)
+add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/utils/optparse.c)
 if(UNIX)
 target_link_libraries(code_gen m)
 endif()

@@ -42,6 +42,16 @@ char *arg_param(char *arg);
 /// @return the remaining options
 char *hostport_param(char *param, char **host, char **port);
 
+/// Convert a string to a double, uses strtod() and accepts
+/// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
+///
+/// Parse errors will fprintf(stderr, ...) and exit(1).
+///
+/// @param str: character string to parse
+/// @param error_hint: prepended to error output
+/// @return parsed number value
+double atod_metric(const char *str, const char *error_hint);
+
 /// Convert a string to an unsigned integer, uses strtod() and accepts
 /// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
 ///
@@ -60,8 +70,19 @@ uint32_t atouint32_metric(const char *str, const char *error_hint);
 ///
 /// @param str: character string to parse
 /// @param error_hint: prepended to error output
-/// @return parsed number value
+/// @return parsed time value in seconds
 int atoi_time(const char *str, const char *error_hint);
+
+/// Convert a string to a double, uses strtod() and accepts
+/// fractional number, or percent suffix ('%'),
+/// or a fraction of the form x/y.
+///
+/// Parse errors will fprintf(stderr, ...) and exit(1).
+///
+/// @param str: character string to parse
+/// @param error_hint: prepended to error output
+/// @return parsed factor value
+double atod_fraction(const char *str, const char *error_hint);
 
 /// Similar to strsep.
 ///
