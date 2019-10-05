@@ -430,3 +430,37 @@ out:
 
     return r >= 0 ? r : -r;
 }
+
+void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
+{
+    printf("TX command:\n");
+    printf("  device selection\n");
+    printf("    dev_query=\"%s\"\n", tx->dev_query);
+    printf("  device setup\n");
+    printf("    gain_str=\"%s\"\n", tx->gain_str);
+    printf("    antenna=\"%s\"\n", tx->antenna);
+    printf("    channel=%zu\n", tx->channel);
+    printf("  rf setup\n");
+    printf("    ppm_error=%f\n", tx->ppm_error);
+    printf("    center_frequency=%f\n", tx->center_frequency);
+    printf("    sample_rate=%f\n", tx->sample_rate);
+    printf("    bandwidth=%f\n", tx->bandwidth);
+    printf("    master_clock_rate=%f\n", tx->master_clock_rate);
+    printf("    output_format=\"%s\"\n", tx->output_format);
+    printf("    block_size=%zu\n", tx->block_size);
+    printf("  transmit control\n");
+    printf("    initial_delay=%u\n", tx->initial_delay);
+    printf("    repeats=%u\n", tx->repeats);
+    printf("    repeat_delay=%u\n", tx->repeat_delay);
+    printf("    loops=%u\n", tx->loops);
+    printf("    loop_delay=%u\n", tx->loop_delay);
+    printf("  input from file descriptor\n");
+    printf("    input_format=\"%s\"\n", tx->input_format);
+    printf("    stream_fd=%i\n", tx->stream_fd);
+    printf("    samples_to_write=%zu\n", tx->samples_to_write);
+    printf("  input from buffer\n");
+    printf("    stream_buffer=%p\n", tx->stream_buffer);
+    printf("    buffer_size=%zu\n", tx->buffer_size);
+    printf("  input from text\n");
+    printf("    pulses=\"%s\"\n", tx->pulses);
+}

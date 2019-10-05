@@ -43,6 +43,7 @@ typedef struct tx_cmd {
     char const *gain_str;
     char const *antenna;
     size_t channel;
+    // rf setup
     double ppm_error;
     double center_frequency;
     double sample_rate;
@@ -78,5 +79,8 @@ void tx_free_devices(tx_ctx_t *tx_ctx);
 
 /// transmit data
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+/// print transmit data (debug)
+void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
 
 #endif /* INCLUDE_TXLIB_H_ */
