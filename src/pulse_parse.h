@@ -22,7 +22,7 @@
 
 #include <unistd.h>
 
-#include "code_parse.h"
+#include "code_parse.h" /* to get tone_t */
 
 #define READ_CHUNK_SIZE 8192
 
@@ -35,14 +35,6 @@ typedef struct pulse_setup {
     int phase_space; ///< phase offset for space, 0 otherwise
     unsigned time_base;   ///< 1/unit of width, usually 1000000 for us.
 } pulse_setup_t;
-
-typedef struct output_spec {
-    double sample_rate;
-    double noise_floor;  ///< peak-to-peak
-    double noise_signal; ///< peak-to-peak
-    double gain;         ///< usually a little below 1.0
-    //enum sample_format sample_format;
-} output_spec_t;
 
 // parsing a code from string or reading in
 
