@@ -23,18 +23,20 @@
 #include "common.h" /* to get tone_t */
 
 typedef struct pulse_setup {
-    int freq_mark;   ///< frequency offset for mark
-    int freq_space;  ///< frequency offset for space, 0 otherwise
-    int att_mark;    ///< attenuation for mark (dB)
-    int att_space;   ///< attenuation for space (dB), -100 for silence
-    int phase_mark;  ///< phase offset for mark, 0 otherwise
-    int phase_space; ///< phase offset for space, 0 otherwise
-    unsigned time_base;   ///< 1/unit of width, usually 1000000 for us.
+    unsigned time_base; ///< 1/unit of width, usually 1000000 for us.
+    int freq_mark;      ///< frequency offset for mark
+    int freq_space;     ///< frequency offset for space, 0 otherwise
+    int att_mark;       ///< attenuation for mark (dB)
+    int att_space;      ///< attenuation for space (dB), -100 for silence
+    int phase_mark;     ///< phase offset for mark, 0 otherwise
+    int phase_space;    ///< phase offset for space, 0 otherwise
 } pulse_setup_t;
 
 // parsing pulse data from string or reading in
 
 void pulse_setup_defaults(pulse_setup_t *params, char const *name);
+
+void pulse_setup_print(pulse_setup_t *params);
 
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults);
 

@@ -54,11 +54,64 @@ static void skip_ws_c(char const **buf)
     *buf = p;
 }
 
+static unsigned atoi_timescale(const char *str)
+{
+    char *p;
+    double val = strtod(str, &p);
+
+    if (str == p) {
+        fprintf(stderr, "invalid number argument \"%.5s\"\n", str);
+        exit(1);
+    }
+
+    while (p && *p == ' ' && *p == '\t')
+        ++p;
+
+    if (*p == 'n' && p[1] == 's')
+        return (unsigned)(1e9 / val);
+    else if (*p == 'u' && p[1] == 's')
+        return (unsigned)(1e6 / val);
+    else if (*p == 'm' && p[1] == 's')
+        return (unsigned)(1e3 / val);
+    else if (*p == 's')
+        return (unsigned)(1 / val);
+    else {
+        fprintf(stderr, "invalid number scale \"%.5s\"\n", p);
+        exit(1);
+    }
+}
+
 static void parse_param(char const **buf, pulse_setup_t *params)
 {
     char const *p = *buf;
 
-    // get "key = value" ...
+    // skip comment char and ws
+    p++;
+    skip_ws(&p);
+
+    // get key
+    char const *e = p;
+    while (e && *e != ' ' && *e != '\t')
+        ++e;
+
+    if (e - p == 9 && !strncmp(p, "timescale", 9))
+        params->time_base = atoi_timescale(e);
+    else if (e - p == 9 && !strncmp(p, "time_base", 9))
+        params->time_base = (unsigned)atoi(e);
+    else if (e - p == 9 && !strncmp(p, "freq_mark", 9))
+        params->freq_mark = atoi(e);
+    else if (e - p == 10 && !strncmp(p, "freq_space", 10))
+        params->freq_space = atoi(e);
+    else if (e - p == 8 && !strncmp(p, "att_mark", 8))
+        params->att_mark = atoi(e);
+    else if (e - p == 9 && !strncmp(p, "att_space", 9))
+        params->att_space = atoi(e);
+    else if (e - p == 10 && !strncmp(p, "phase_mark", 10))
+        params->phase_mark = atoi(e);
+    else if (e - p == 11 && !strncmp(p, "phase_space", 11))
+        params->phase_space = atoi(e);
+
+    // skip to eol
     while (*p && *p != '\r' && *p != '\n')
         ++p;
     if (*p)
@@ -75,7 +128,7 @@ static int parse_len(char const **buf)
     double val = strtod(p, &endptr);
 
     if (p == endptr) {
-        fprintf(stderr, "invalid number argument (%c)\n", *p);
+        fprintf(stderr, "invalid number argument \"%.5s\"\n", p);
         exit(1);
     }
 
@@ -99,44 +152,56 @@ void pulse_setup_defaults(pulse_setup_t *params, char const *name)
 {
     if (name && (*name == 'F' || *name == 'f')) {
         // FSK
+        params->time_base   = 1000000;
         params->freq_mark   = 50000;
         params->freq_space  = -50000;
         params->att_mark    = -1;
         params->att_space   = -1;
         params->phase_mark  = 0;
         params->phase_space = 0;
-        params->time_base   = 1000000;
     }
     else if (name && (*name == 'A' || *name == 'a')) {
         // ASK
+        params->time_base   = 1000000;
         params->freq_mark   = 100000;
         params->freq_space  = 100000;
         params->att_mark    = -1;
         params->att_space   = -18;
         params->phase_mark  = 0;
         params->phase_space = 0;
-        params->time_base   = 1000000;
     }
     else if (name && (*name == 'P' || *name == 'p')) {
         // PSK
+        params->time_base   = 1000000;
         params->freq_mark   = 100000;
         params->freq_space  = 100000;
         params->att_mark    = -1;
         params->att_space   = -1;
         params->phase_mark  = 180;
         params->phase_space = 180;
-        params->time_base   = 1000000;
     }
     else {
         // OOK
+        params->time_base   = 1000000;
         params->freq_mark   = 100000;
         params->freq_space  = 0;
         params->att_mark    = -1;
         params->att_space   = -100;
         params->phase_mark  = 0;
         params->phase_space = 0;
-        params->time_base   = 1000000;
     }
+}
+
+void pulse_setup_print(pulse_setup_t *params)
+{
+    printf(";timescale %uus\n", 1000000 / params->time_base); // TODO: adapt to "ns"?
+    printf(";time_base %d\n", params->time_base);
+    printf(";freq_mark %d\n", params->freq_mark);
+    printf(";freq_space %d\n", params->freq_space);
+    printf(";att_mark %d\n", params->att_mark);
+    printf(";att_space %d\n", params->att_space);
+    printf(";phase_mark %d\n", params->phase_mark);
+    printf(";phase_space %d\n", params->phase_space);
 }
 
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
@@ -154,18 +219,19 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     char const *p = pulses;
     while (*p) {
         skip_ws(&p);
-        if (*p == ';') {
+        while (*p == ';') {
             // parse one parameter
             parse_param(&p, defaults);
         }
-        else if (*p) {
-            // parse mark and space
-            int mark = parse_len(&p);
-            int space = parse_len(&p);
+        if (!*p)
+            break; // eol
 
-            // len += mark + space;
-            count += 2;
-        }
+        // parse mark and space
+        int mark = parse_len(&p);
+        int space = parse_len(&p);
+
+        // len += mark + space;
+        count += 2;
     }
 
     tone_t *tones = malloc((count + 1) * sizeof(tone_t));
@@ -176,6 +242,9 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     p = pulses;
     while (*p) {
         skip_ws_c(&p);
+        if (!*p)
+            break; // eol
+
         // parse mark and space
         int mark  = parse_len(&p);
         int space = parse_len(&p);
@@ -238,13 +307,13 @@ void output_pulses(tone_t const *tones)
     printf(";pulse data\n");
     printf(";version 1\n");
     printf(";timescale 1us\n");
+    printf(";time_base %d\n", 1000000);
     printf(";freq_mark %d\n", tones[0].hz);
     printf(";freq_space %d\n", tones[1].hz);
     printf(";att_mark %d\n", tones[0].db);
     printf(";att_space %d\n", tones[1].db);
     printf(";phase_mark %d\n", tones[0].ph);
     printf(";phase_space %d\n", tones[1].ph);
-    printf(";time_base %d\n", 1000000);
 
     for (tone_t const *t = tones; t->us || t->hz; ++t) {
         tone_t const *m = t++;
