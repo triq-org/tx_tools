@@ -209,24 +209,50 @@ static void add_noise(size_t time_us, int db)
     }
 }
 
+static int g_db     = -40; // continuous db
+static double g_hz  = 0;   // continuous freq
+static uint32_t phi = 0;   // continuous phase
+
+static double filter_out[100] = {0};
+static double filter_in[100] = {0};
+static size_t filter_len  = 0;
+
+static void init_filter(size_t time_us)
+{
+    filter_len = (size_t)(time_us * sample_rate / 1000000.0);
+    //uint32_t l_phi = 0;
+    //uint32_t d_phi = nco_d_phase(1000000 / 2 / time_us, (size_t)sample_rate);
+    for (size_t t = 0; t < filter_len; ++t) {
+        filter_out[t] = (filter_len - t) / (double)filter_len;
+        filter_in[t]  = t / (double)filter_len;
+
+        //filter_out[t] = (nco_cos(l_phi) + 1) / 2;
+        //printf("at %2d : %f\n", t, filter_out[t]);
+        //filter_in[t]  = 1.0 - filter_out[t];
+        //l_phi += d_phi;
+    }
+}
+
 static void add_sine(double freq_hz, size_t time_us, int db)
 {
     uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)sample_rate);
-    uint32_t phi = 0; //nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us);
+    // uint32_t phi = nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us); // absolute phase
+    // uint32_t phi = 0; // relative phase
 
-    double att = db_to_mag(db);
-    //size_t att_steps = 10;
+    double n_att = db_to_mag(db);
+    double g_att = db_to_mag(g_db);
+    g_db = db;
+    g_hz = freq_hz;
 
     size_t end = (size_t)(time_us * sample_rate / 1000000.0);
     for (size_t t = 0; t < end; ++t) {
 
         // ramp in and out
-        //double att_in = t < att_steps ? (1.0 / att_steps) * t : 1.0;
-        //double att_out = t + att_steps > end ? (1.0 / att_steps) * (end - t) : 1.0;
+        double att = t < filter_len ? filter_out[t] * g_att + filter_in[t] * n_att : n_att;
 
         // complex I/Q
-        double x = nco_cos(phi) * gain * att;// * att_in * att_out;
-        double y = nco_sin(phi) * gain * att;// * att_in * att_out;
+        double x = nco_cos(phi) * gain * att;
+        double y = nco_sin(phi) * gain * att;
         phi += d_phi;
 
         // disturb
@@ -241,6 +267,7 @@ static void gen(char *outpath, tone_t *tones)
 {
     init_db_lut();
     nco_init();
+    init_filter(50);
 
     if (!outpath || !*outpath || !strcmp(outpath, "-"))
         fd = fileno(stdout);
@@ -258,7 +285,8 @@ static void gen(char *outpath, tone_t *tones)
     size_t signal_length_us = 0;
     for (tone_t *tone = tones; tone->us && !do_exit; ++tone) {
         if (tone->db < -24) {
-            add_noise((size_t)tone->us, tone->db);
+            //add_noise((size_t)tone->us, tone->db);
+            add_sine(g_hz, (size_t)tone->us, tone->db);
         }
         else {
             add_sine(tone->hz, (size_t)tone->us, tone->db);
