@@ -211,18 +211,14 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     if (!defaults)
         return NULL;
 
-    // unsigned len = 0;
-    unsigned count = 0;
 
-    // read header and sum pulse length
+    // sum pulse count
+
+    unsigned count = 0;
 
     char const *p = pulses;
     while (*p) {
-        skip_ws(&p);
-        while (*p == ';') {
-            // parse one parameter
-            parse_param(&p, defaults);
-        }
+        skip_ws_c(&p);
         if (!*p)
             break; // eol
 
@@ -230,18 +226,22 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
         int mark = parse_len(&p);
         int space = parse_len(&p);
 
-        // len += mark + space;
         count += 2;
     }
 
-    tone_t *tones = malloc((count + 1) * sizeof(tone_t));
 
-    // skip header and generate pulses
+    // parse and generate pulses
+
+    tone_t *tones = malloc((count + 1) * sizeof(tone_t));
 
     int i = 0;
     p = pulses;
     while (*p) {
-        skip_ws_c(&p);
+        skip_ws(&p);
+        while (*p == ';') {
+            // parse one parameter
+            parse_param(&p, defaults);
+        }
         if (!*p)
             break; // eol
 

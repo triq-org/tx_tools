@@ -198,11 +198,18 @@ void output_tone(tone_t const *t)
     if (t->hz == 0) {
         printf("(%dus) ", t->us);
     }
-    else if (t->db == 0) {
+    else if (t->db == 0 && t->ph == 0) {
         printf("(%dHz %dus) ", t->hz, t->us);
     }
-    else {
+    else if (t->db == 0) {
+        printf("(%dHz %ddeg %dus) ", t->hz, t->ph, t->us);
+    }
+    else if (t->ph == 0) {
         printf("(%dHz %ddB %dus) ", t->hz, t->db, t->us);
+    }
+    else
+    {
+        printf("(%dHz %ddeg %ddB %dus) ", t->hz, t->ph, t->db, t->us);
     }
 }
 
