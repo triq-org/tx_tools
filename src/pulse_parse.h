@@ -20,11 +20,7 @@
 #ifndef INCLUDE_PULSEPARSE_H_
 #define INCLUDE_PULSEPARSE_H_
 
-#include <unistd.h>
-
-#include "code_parse.h" /* to get tone_t */
-
-#define READ_CHUNK_SIZE 8192
+#include "common.h" /* to get tone_t */
 
 typedef struct pulse_setup {
     int freq_mark;   ///< frequency offset for mark
@@ -36,7 +32,7 @@ typedef struct pulse_setup {
     unsigned time_base;   ///< 1/unit of width, usually 1000000 for us.
 } pulse_setup_t;
 
-// parsing a code from string or reading in
+// parsing pulse data from string or reading in
 
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults);
 
@@ -45,9 +41,5 @@ tone_t *parse_pulses_file(char const *filename, pulse_setup_t *defaults);
 // debug output to stdout
 
 void output_pulses(tone_t const *tones);
-
-// parsing pulse data from string
-
-//int pulse_gen(char const *pulses, pulse_setup_t *defaults, output_spec_t *out_spec, void **out_buf, size_t *out_len);
 
 #endif /* INCLUDE_PULSEPARSE_H_ */

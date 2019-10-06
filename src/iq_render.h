@@ -20,9 +20,8 @@
 #ifndef INCLUDE_IQRENDER_H_
 #define INCLUDE_IQRENDER_H_
 
-#include <unistd.h>
-#include "code_parse.h" /* to get tone_t */
-#include "common.h" /* to get sample_format_t */
+#include <stddef.h> /* size_t */
+#include "common.h" /* to get tone_t, sample_format_t */
 
 #define DEFAULT_SAMPLE_RATE 1000000
 #define DEFAULT_BUF_LENGTH (1 * 16384)
@@ -42,7 +41,7 @@ typedef struct iq_render {
 
 extern int abort_render;
 
-void iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones);
+int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones);
 
 int iq_render_buf(tone_t *tones, iq_render_t *spec, void **out_buf, size_t *out_len);
 

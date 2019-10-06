@@ -1,22 +1,23 @@
-/*
- * tx_tools - code_gen, symbolic I/Q waveform generator
- *
- * Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/** @file
+    tx_tools - code_gen, symbolic I/Q waveform generator.
 
+    Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "code_parse.h"
 #include "iq_render.h"
 #include "common.h"
 
@@ -46,9 +47,7 @@
 
 #include <time.h>
 
-#include <math.h>
 #include "optparse.h"
-#include "code_parse.h"
 
 static void print_version(void)
 {
@@ -97,23 +96,6 @@ static void sighandler(int signum)
 }
 #endif
 
-static double noise_pp_level(char *arg, const char *error_hint)
-{
-    double level = atod_metric(arg, error_hint);
-    if (level < 0)
-        level = pow(10.0, 1.0 / 20.0 * level);
-    // correct for RMS to equal a sine
-    return level * 2 * sqrt(1.0 / 2.0 * 3.0 / 2.0);
-}
-
-static double sine_pk_level(char *arg, const char *error_hint)
-{
-    double level = atod_metric(arg, error_hint);
-    if (level <= 0)
-        level = pow(10.0, 1.0 / 20.0 * level);
-    return level;
-}
-
 int main(int argc, char **argv)
 {
     int verbosity = 0;
@@ -146,13 +128,13 @@ int main(int argc, char **argv)
             *next_f++ = atod_metric(optarg, "-f: ");
             break;
         case 'n':
-            spec.noise_floor = noise_pp_level(optarg, "-n: ");
+            spec.noise_floor = atod_metric(optarg, "-n: ");
             break;
         case 'N':
-            spec.noise_signal = noise_pp_level(optarg, "-N: ");
+            spec.noise_signal = atod_metric(optarg, "-N: ");
             break;
         case 'g':
-            spec.gain = sine_pk_level(optarg, "-g: ");
+            spec.gain = atod_metric(optarg, "-g: ");
             break;
         case 'b':
             spec.frame_size = atouint32_metric(optarg, "-b: ");

@@ -17,6 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "pulse_parse.h"
+#include "iq_render.h"
+#include "common.h"
+
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
@@ -43,11 +47,7 @@
 
 #include <time.h>
 
-#include <math.h>
 #include "optparse.h"
-#include "common.h"
-#include "pulse_parse.h"
-#include "iq_render.h"
 
 static void print_version(void)
 {
@@ -101,23 +101,6 @@ static void sighandler(int signum)
     abort_render = 1;
 }
 #endif
-
-static double noise_pp_level(char *arg, const char *error_hint)
-{
-    double level = atod_metric(arg, error_hint);
-    if (level < 0)
-        level = pow(10.0, 1.0 / 20.0 * level);
-    // correct for RMS to equal a sine
-    return level * 2 * sqrt(1.0 / 2.0 * 3.0 / 2.0);
-}
-
-static double sine_pk_level(char *arg, const char *error_hint)
-{
-    double level = atod_metric(arg, error_hint);
-    if (level <= 0)
-        level = pow(10.0, 1.0 / 20.0 * level);
-    return level;
-}
 
 static void set_defaults(pulse_setup_t *params, char const *name)
 {
@@ -207,13 +190,13 @@ int main(int argc, char **argv)
             *next_f++ = atod_metric(optarg, "-p: ");
             break;
         case 'n':
-            spec.noise_floor = noise_pp_level(optarg, "-n: ");
+            spec.noise_floor = atod_metric(optarg, "-n: ");
             break;
         case 'N':
-            spec.noise_signal = noise_pp_level(optarg, "-N: ");
+            spec.noise_signal = atod_metric(optarg, "-N: ");
             break;
         case 'g':
-            spec.gain = sine_pk_level(optarg, "-g: ");
+            spec.gain = atod_metric(optarg, "-g: ");
             break;
         case 'b':
             spec.frame_size = atouint32_metric(optarg, "-b: ");

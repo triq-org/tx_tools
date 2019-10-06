@@ -40,6 +40,13 @@ enum sample_format {
     FORMAT_CF32,
 };
 
+typedef struct {
+    int hz; ///< Tone frequency (Hz)
+    int db; ///< Tone attenuation (dB)
+    int ph; ///< Tone phase (deg offset)
+    int us; ///< Tone length (us)
+} tone_t;
+
 // helper for sample formats
 
 char const *sample_format_str(enum sample_format format);

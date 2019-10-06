@@ -23,7 +23,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "common.h"
 
@@ -89,8 +88,6 @@ static unsigned parse_len(char const **buf)
     return (unsigned)val;
 }
 
-//int pulse_gen(char const *pulses, pulse_setup_t *defaults, output_spec_t *out_spec, void **out_buf, size_t *out_len);
-
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
 {
     if (!pulses || !*pulses)
@@ -98,8 +95,8 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     if (!defaults)
         return NULL;
 
-    size_t len = 0;
-    size_t count = 0;
+    unsigned len = 0;
+    unsigned count = 0;
 
     // read header and sum pulse length
 
@@ -120,7 +117,6 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
         }
     }
 
-    //uint8_t *buf = malloc(len); // times size, resampling, timebase, ...
     tone_t *tones = malloc((count + 1) * sizeof(tone_t));
 
     // skip header and generate pulses

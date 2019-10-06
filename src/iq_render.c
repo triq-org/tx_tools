@@ -35,13 +35,11 @@
 #include <io.h>
 #include <fcntl.h>
 #ifdef _MSC_VER
-#include "getopt/getopt.h"
 #define F_OK 0
 #endif
 #endif
 #ifndef _MSC_VER
 #include <unistd.h>
-#include <getopt.h>
 #endif
 
 #include <time.h>
@@ -50,17 +48,33 @@
 
 int abort_render = 0;
 
-static double sample_rate = DEFAULT_SAMPLE_RATE;
-static double noise_floor = 0.1 * 2; // peak-to-peak
-static double noise_signal = 0.05 * 2; // peak-to-peak
-static double gain = 1.0;
-static int fd = -1;
+static double sample_rate  = DEFAULT_SAMPLE_RATE;
+static double noise_floor  = 0.1 * 2;  ///< peak-to-peak
+static double noise_signal = 0.05 * 2; ///< peak-to-peak
+static double gain         = 1.0;      ///< sine-peak
 
 static enum sample_format sample_format = FORMAT_NONE;
-static size_t frame_size = DEFAULT_BUF_LENGTH;
+static size_t frame_size                = DEFAULT_BUF_LENGTH;
+
 static size_t out_block_len = 0;
 static size_t out_block_pos = 0;
 static frame_t out_block;
+static int fd = -1;
+
+static double noise_pp_level(double level)
+{
+    if (level < 0)
+        level = pow(10.0, 1.0 / 20.0 * level);
+    // correct for RMS to equal a sine
+    return level * 2 * sqrt(1.0 / 2.0 * 3.0 / 2.0);
+}
+
+static double sine_pk_level(double level)
+{
+    if (level <= 0)
+        level = pow(10.0, 1.0 / 20.0 * level);
+    return level;
+}
 
 static double randf(void)
 {
@@ -211,13 +225,29 @@ static void add_sine(double freq_hz, size_t time_us, int db)
     }
 }
 
-void iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
+static void iq_render_init(iq_render_t *spec)
 {
+    if (spec->sample_rate == 0.0)
+        spec->sample_rate = DEFAULT_SAMPLE_RATE;
+    if (spec->frame_size == 0)
+        spec->frame_size = DEFAULT_BUF_LENGTH;
+
+    sample_rate   = spec->sample_rate;
+    noise_floor   = noise_pp_level(spec->noise_floor);
+    noise_signal  = noise_pp_level(spec->noise_signal);
+    gain          = sine_pk_level(spec->gain);
+    sample_format = spec->sample_format;
+    frame_size    = spec->frame_size;
+    signal_out    = format_out[sample_format];
+
     init_db_lut();
     nco_init();
     init_filter(50);
+}
 
-    signal_out = format_out[sample_format];
+int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
+{
+    iq_render_init(spec);
 
     if (!outpath || !*outpath || !strcmp(outpath, "-"))
         fd = fileno(stdout);
@@ -252,6 +282,8 @@ void iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
     free(out_block.u8);
     if (fd != fileno(stdout))
         close(fd);
+
+    return 0;
 }
 
 
