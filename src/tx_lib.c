@@ -19,6 +19,10 @@
 
 #include "tx_lib.h"
 
+#include "pulse_parse.h"
+#include "code_parse.h"
+#include "iq_render.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -131,9 +135,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
 {
     SoapySDRDevice *dev    = NULL;
     SoapySDRStream *stream = NULL;
-    int16_t *buf16         = NULL;
-    uint8_t *buf8          = NULL;
-    float *fbuf            = NULL; // assumed 32-bit
+    frame_t txbuf          = {0};
     double fullScale       = 0.0;
     int r;
 
@@ -174,19 +176,13 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         tx->output_format = nativeFormat;
     }
 
-    buf16 = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CS16));
-    if (is_format_equal(tx->input_format, SOAPY_SDR_CS8) || is_format_equal(tx->input_format, SOAPY_SDR_CU8)) {
-        buf8 = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CS8));
+    txbuf.s16 = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CS16));
+    if (!txbuf.s16) {
+        perror("tx_input_init");
+        exit(EXIT_FAILURE);
     }
-    else if (is_format_equal(tx->input_format, SOAPY_SDR_CF32)) {
-        fbuf = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CF32));
-    }
-    else if (is_format_equal(tx->input_format, SOAPY_SDR_CS16)) {
-        // nothing to do
-    }
-    else {
-        fprintf(stderr, "Unhandled format '%s'.\n", tx->input_format);
-        r = -1;
+    r = tx_input_init(tx_ctx, tx);
+    if (r) {
         goto out;
     }
 
@@ -277,38 +273,8 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         ssize_t n_read   = 0;
         size_t n_samps   = 0, i;
 
-        if (is_format_equal(tx->input_format, SOAPY_SDR_CS16)) {
-            n_read  = read(tx->stream_fd, buf16, sizeof(int16_t) * 2 * tx->block_size);
-            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint16_t) / 2;
-            // The "native" format we read in, write out no conversion needed
-            if (fullScale < 32767.0) // actually we expect 32768.0
-                for (i = 0; i < n_samps * 2; ++i) {
-                    buf16[i] *= fullScale / 32768.0;
-                }
-        }
-        else if (is_format_equal(tx->input_format, SOAPY_SDR_CS8)) {
-            n_read  = read(tx->stream_fd, buf8, sizeof(int8_t) * 2 * tx->block_size);
-            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(int8_t) / 2;
-            for (i = 0; i < n_samps * 2; ++i) {
-                buf16[i] = (int16_t)(((int8_t)buf8[i] + 0.4) / 128.0 * fullScale);
-            }
-        }
-        else if (is_format_equal(tx->input_format, SOAPY_SDR_CU8)) {
-            n_read  = read(tx->stream_fd, buf8, sizeof(uint8_t) * 2 * tx->block_size);
-            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint8_t) / 2;
-            for (i = 0; i < n_samps * 2; ++i) {
-                buf16[i] = (int16_t)((buf8[i] + 127.4) / 128.0 * fullScale);
-            }
-        }
-        else if (is_format_equal(tx->input_format, SOAPY_SDR_CF32)) {
-            n_read  = read(tx->stream_fd, fbuf, sizeof(float) * 2 * tx->block_size);
-            n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(float) / 2;
-            if (!is_format_equal(tx->output_format, SOAPY_SDR_CF32))
-                for (i = 0; i < n_samps * 2; ++i) {
-                    buf16[i] = (int16_t)(fbuf[i] / 1.0f * (float)fullScale);
-                }
-        }
-        else {
+        n_read = tx_input_read(tx_ctx, tx, txbuf.s16, &n_samps, fullScale);
+        if (n_read == -2) {
             fprintf(stderr, "Unsupported input format: %s (output format: %s)\n", tx->input_format, tx->output_format);
             r = -1;
             goto out;
@@ -330,7 +296,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         }
         if (n_read == 0) {
             if (tx->loops) {
-                lseek(tx->stream_fd, 0, SEEK_SET);
+                tx_input_reset(tx_ctx, tx);
                 tx->loops--;
             }
             else {
@@ -353,9 +319,9 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
         r      = 0; // clean ret should we exit
         for (size_t pos = 0; pos < n_samps && !tx->flag_abort;) {
             if (is_format_equal(tx->output_format, SOAPY_SDR_CF32))
-                buffs[0] = &fbuf[2 * pos];
+                buffs[0] = &txbuf.f32[2 * pos];
             else
-                buffs[0] = &buf16[2 * pos];
+                buffs[0] = &txbuf.s16[2 * pos];
 
             // flush TX buffer?
             if (n_samps < tx->block_size)
@@ -424,9 +390,7 @@ out:
     if (dev)
         SoapySDRDevice_unmake(dev);
 
-    free(buf16);
-    free(buf8);
-    free(fbuf);
+    free(txbuf.s16);
 
     return r >= 0 ? r : -r;
 }
@@ -462,5 +426,151 @@ void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     printf("    stream_buffer=%p\n", tx->stream_buffer);
     printf("    buffer_size=%zu\n", tx->buffer_size);
     printf("  input from text\n");
+    printf("    freq_mark=%i\n", tx->freq_mark);
+    printf("    freq_space=%i\n", tx->freq_space);
+    printf("    att_mark=%i\n", tx->att_mark);
+    printf("    att_space=%i\n", tx->att_space);
+    printf("    phase_mark=%i\n", tx->phase_mark);
+    printf("    phase_space=%i\n", tx->phase_space);
     printf("    pulses=\"%s\"\n", tx->pulses);
+}
+
+// input processing
+
+int tx_input_init(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
+{
+    // unpack pulses if needed
+
+    if (tx->pulses) {
+        iq_render_t iq_render = {0};
+        iq_render_defaults(&iq_render);
+        iq_render.sample_rate = tx->sample_rate;
+        //iq_render.sample_format = sample_format_for(tx->output_format);
+
+        pulse_setup_t pulse_setup = {0};
+        pulse_setup_defaults(&pulse_setup, "OOK");
+        pulse_setup.freq_mark = tx->freq_mark;
+        pulse_setup.freq_space = tx->freq_space;
+        pulse_setup.att_mark = tx->att_mark;
+        pulse_setup.att_space = tx->att_space;
+        pulse_setup.phase_mark = tx->phase_mark;
+        pulse_setup.phase_space = tx->phase_space;
+
+        tone_t *tones = parse_pulses(tx->pulses, &pulse_setup);
+        output_pulses(tones); // debug
+
+        iq_render_buf(&iq_render, tones, &tx->stream_buffer, &tx->buffer_size);
+        free(tones);
+
+        return 0;
+    }
+
+    // otherwise: setup stream conversion
+
+    if (is_format_equal(tx->input_format, SOAPY_SDR_CS8) || is_format_equal(tx->input_format, SOAPY_SDR_CU8)) {
+        tx->conv_buf.s8 = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CS8));
+        if (!tx->conv_buf.s8) {
+            perror("tx_input_init");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if (is_format_equal(tx->input_format, SOAPY_SDR_CF32)) {
+        // note: platform float is assumed to be 32-bit
+        tx->conv_buf.f32 = malloc(tx->block_size * SoapySDR_formatToSize(SOAPY_SDR_CF32));
+        if (!tx->conv_buf.f32) {
+            perror("tx_input_init");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if (is_format_equal(tx->input_format, SOAPY_SDR_CS16)) {
+        // nothing to do
+    }
+    else {
+        fprintf(stderr, "Unhandled format '%s'.\n", tx->input_format);
+        return -1;
+    }
+
+    return 0;
+}
+
+int tx_input_destroy(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
+{
+    free(tx->stream_buffer);
+
+    free(tx->conv_buf.u8);
+
+    return 0;
+}
+
+int tx_input_reset(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
+{
+    if (tx->stream_fd >= 0) {
+        lseek(tx->stream_fd, 0, SEEK_SET);
+    }
+    else {
+        tx->buffer_offset = 0;
+    }
+
+    return 0;
+}
+
+ssize_t tx_input_read(tx_ctx_t *tx_ctx, tx_cmd_t *tx, void *buf, size_t *out_samps, double fullScale)
+{
+    // read from buffer
+
+    if (!tx->stream_fd) {
+        size_t n_read = sizeof(int16_t) * 2 * tx->block_size;
+        if (n_read > tx->block_size - tx->buffer_offset)
+            n_read = tx->block_size - tx->buffer_offset;
+
+        memcpy(buf, (uint8_t *)(tx->stream_buffer) + tx->buffer_offset, n_read);
+        tx->buffer_offset += n_read;
+
+        *out_samps = (size_t)n_read / sizeof(uint16_t) / 2;
+        return (ssize_t)n_read;
+    }
+
+    // read from stream
+
+    ssize_t n_read;
+    size_t n_samps;
+
+    if (is_format_equal(tx->input_format, SOAPY_SDR_CS16)) {
+        n_read  = read(tx->stream_fd, buf, sizeof(int16_t) * 2 * tx->block_size);
+        n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint16_t) / 2;
+        // The "native" format we read in, write out no conversion needed
+        if (fullScale < 32767.0) // actually we expect 32768.0
+            for (size_t i = 0; i < n_samps * 2; ++i) {
+                ((int16_t *)buf)[i] *= fullScale / 32768.0;
+            }
+    }
+    else if (is_format_equal(tx->input_format, SOAPY_SDR_CS8)) {
+        n_read  = read(tx->stream_fd, tx->conv_buf.u8, sizeof(int8_t) * 2 * tx->block_size);
+        n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(int8_t) / 2;
+        for (size_t i = 0; i < n_samps * 2; ++i) {
+            ((int16_t *)buf)[i] = (int16_t)((tx->conv_buf.s8[i] + 0.4) / 128.0 * fullScale);
+        }
+    }
+    else if (is_format_equal(tx->input_format, SOAPY_SDR_CU8)) {
+        n_read  = read(tx->stream_fd, tx->conv_buf.u8, sizeof(uint8_t) * 2 * tx->block_size);
+        n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint8_t) / 2;
+        for (size_t i = 0; i < n_samps * 2; ++i) {
+            ((int16_t *)buf)[i] = (int16_t)((tx->conv_buf.u8[i] + 127.4) / 128.0 * fullScale);
+        }
+    }
+    else if (is_format_equal(tx->input_format, SOAPY_SDR_CF32)) {
+        n_read  = read(tx->stream_fd, tx->conv_buf.u8, sizeof(float) * 2 * tx->block_size);
+        n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(float) / 2;
+        if (!is_format_equal(tx->output_format, SOAPY_SDR_CF32))
+            for (size_t i = 0; i < n_samps * 2; ++i) {
+                ((int16_t *)buf)[i] = (int16_t)(tx->conv_buf.f32[i] / 1.0f * (float)fullScale);
+            }
+    }
+    else {
+        fprintf(stderr, "Unsupported input format: %s (output format: %s)\n", tx->input_format, tx->output_format);
+        return -2;
+    }
+
+    *out_samps = n_samps;
+    return n_read;
 }

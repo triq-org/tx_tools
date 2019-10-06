@@ -21,6 +21,10 @@
 #define INCLUDE_TXLIB_H_
 
 #include <stddef.h>
+#include <stdint.h>
+#include <unistd.h>
+
+#include "common.h"
 
 typedef struct tx_ctx {
     size_t devs_len;
@@ -36,7 +40,6 @@ typedef enum stream_format {
 } stream_format_t;
 
 typedef struct tx_cmd {
-    int flag_abort;
     // device selection
     char const *dev_query;
     // device setup
@@ -63,24 +66,48 @@ typedef struct tx_cmd {
     size_t samples_to_write;
     // input from buffer
     void *stream_buffer;
+    size_t buffer_offset;
     size_t buffer_size;
-    // input from text
+    // input from text (OOK, ASK, FSK, PSK)
+    int freq_mark;   ///< frequency offset for mark
+    int freq_space;  ///< frequency offset for space, 0 otherwise
+    int att_mark;    ///< attenuation for mark
+    int att_space;   ///< attenuation for space, 0 otherwise
+    int phase_mark;  ///< phase offset for mark, 0 otherwise
+    int phase_space; ///< phase offset for space, 0 otherwise
     char const *pulses;
+    // private
+    int flag_abort; ///< private
+    frame_t conv_buf;
 } tx_cmd_t;
 
-/// parse SoapySDR format string
+/// Parse SoapySDR format string.
 char const* tx_parse_soapy_format(char const *format);
 
-/// enumerate all devices
+/// Enumerate all devices.
 void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);
 
-/// unmake all devices
+/// Unmake all devices.
 void tx_free_devices(tx_ctx_t *tx_ctx);
 
-/// transmit data
+/// Transmit data.
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
 
-/// print transmit data (debug)
+/// Print transmit data (debug).
 void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+// input processing
+
+/// Prepare input data.
+int tx_input_init(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+/// Discard and close input data.
+int tx_input_destroy(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+/// Reset input data.
+int tx_input_reset(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+/// Read input data.
+ssize_t tx_input_read(tx_ctx_t *tx_ctx, tx_cmd_t *tx, void *buf, size_t *out_samps, double fullScale);
 
 #endif /* INCLUDE_TXLIB_H_ */
