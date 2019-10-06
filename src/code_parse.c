@@ -17,18 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "code_parse.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
+#include "common.h"
 #include "transform.h"
-#include "code_parse.h"
 
 static void skip_ws(char const **buf)
 {
@@ -143,7 +140,7 @@ static void append_transform(tone_t **t, char const **buf, symbol_t *s)
     // skip opening brace
     if (**buf == '{')
         ++(*buf);
-    
+
     char const *end = strchr(*buf, '}');
     if (!end)
         return;
@@ -263,33 +260,6 @@ void free_symbols(symbol_t *symbols)
 {
     if (symbols)
         free(symbols);
-}
-
-char const *read_text_fd(int fd, char const *file_hint)
-{
-    char *text = NULL;
-
-    size_t n_offs = 0;
-    ssize_t n_read = 1; // just to get us started
-    while (n_read) {
-        text = realloc((void *)text, n_offs + READ_CHUNK_SIZE);
-        n_read = read(fd, (void *)&text[n_offs], READ_CHUNK_SIZE);
-        if (n_read < 0) {
-            fprintf(stderr, "Error %d reading \"%s\".\n", (int)n_read, file_hint);
-            exit((int)n_read);
-        }
-        n_offs += (size_t)n_read;
-    }
-
-    return text;
-}
-
-char const *read_text_file(char const *filename)
-{
-    int fd = open(filename, O_RDONLY);
-    char const *text = read_text_fd(fd, filename);
-    close(fd);
-    return text;
 }
 
 symbol_t *parse_code_file(char const *filename, symbol_t *symbols)

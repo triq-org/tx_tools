@@ -20,12 +20,11 @@
 #ifndef INCLUDE_CODEPARSE_H_
 #define INCLUDE_CODEPARSE_H_
 
-#define READ_CHUNK_SIZE 8192
-
 typedef struct {
-    int hz;
-    int db;
-    int us;
+    int hz; ///< Tone frequency (Hz)
+    int db; ///< Tone attenuation (dB)
+    int ph; ///< Tone phase (deg offset)
+    int us; ///< Tone length (us)
 } tone_t;
 
 typedef struct {
@@ -46,11 +45,5 @@ void free_symbols(symbol_t *symbols);
 void output_tone(tone_t const *t);
 
 void output_symbol(symbol_t const *s);
-
-// helper to get fiel contents
-
-char const *read_text_fd(int fd, char const *file_hint);
-
-char const *read_text_file(char const *filename);
 
 #endif /* INCLUDE_CODEPARSE_H_ */

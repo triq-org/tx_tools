@@ -1,21 +1,21 @@
-/*
- * tx_tools - code_gen, symbolic I/Q waveform generator
- *
- * Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/** @file
+    tx_tools - pulse_gen, pulse data I/Q waveform generator.
+
+    Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include <errno.h>
 #include <signal.h>
@@ -45,7 +45,7 @@
 
 #include "optparse.h"
 #include "common.h"
-#include "code_parse.h"
+#include "pulse_parse.h"
 #include "nco.h"
 
 #define DEFAULT_SAMPLE_RATE 1000000
@@ -55,7 +55,7 @@
 
 static void print_version(void)
 {
-    fprintf(stderr, "code_gen version 0.1\n");
+    fprintf(stderr, "pulse_gen version 0.1\n");
     fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
@@ -63,10 +63,16 @@ __attribute__((noreturn))
 static void usage(int exitcode)
 {
     fprintf(stderr,
-            "code_gen, a simple I/Q waveform generator\n\n"
+            "pulse_gen, pulse data I/Q waveform generator\n\n"
             "Usage:"
+            "\t[-h] Output this usage help and exit\n"
+            "\t[-V] Output the version string and exit\n"
+            "\t[-v] Increase verbosity (can be used multiple times).\n"
             "\t[-s sample_rate (default: 2048000 Hz)]\n"
+            "\t[-m OOK|ASK|FSK|PSK] preset mode defaults\n"
             "\t[-f frequency Hz] adds a base frequency (use twice with e.g. 2FSK)\n"
+            "\t[-a attenuation dB] adds a base attenuation (use twice with e.g. ASK)\n"
+            "\t[-p phase deg] adds a base phase (use twice with e.g. PSK)\n"
             "\t[-n noise floor dBFS or multiplier]\n"
             "\t[-N noise on signal dBFS or multiplier]\n"
             "\t Noise level < 0 for attenuation in dBFS, otherwise amplitude multiplier, 0 is off.\n"
@@ -75,7 +81,7 @@ static void usage(int exitcode)
             "\t Levels as dbFS or multiplier are peak values, e.g. 0 dB or 1.0 x are equivalent to -3 dB RMS.\n"
             "\t[-b output_block_size (default: 16 * 16384) bytes]\n"
             "\t[-r file_path (default: '-', read code from stdin)]\n"
-            "\t[-c code_text] parse given code text\n"
+            "\t[-t pulse_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
             "\tfilename (a '-' writes samples to stdout)\n\n");
     exit(exitcode);
@@ -209,24 +215,50 @@ static void add_noise(size_t time_us, int db)
     }
 }
 
+static int g_db     = -40; // continuous db
+static double g_hz  = 0;   // continuous freq
+static uint32_t phi = 0;   // continuous phase
+
+static double filter_out[100] = {0};
+static double filter_in[100] = {0};
+static size_t filter_len  = 0;
+
+static void init_filter(size_t time_us)
+{
+    filter_len = (size_t)(time_us * sample_rate / 1000000.0);
+    //uint32_t l_phi = 0;
+    //uint32_t d_phi = nco_d_phase(1000000 / 2 / time_us, (size_t)sample_rate);
+    for (size_t t = 0; t < filter_len; ++t) {
+        filter_out[t] = (filter_len - t) / (double)filter_len;
+        filter_in[t]  = t / (double)filter_len;
+
+        //filter_out[t] = (nco_cos(l_phi) + 1) / 2;
+        //printf("at %2d : %f\n", t, filter_out[t]);
+        //filter_in[t]  = 1.0 - filter_out[t];
+        //l_phi += d_phi;
+    }
+}
+
 static void add_sine(double freq_hz, size_t time_us, int db)
 {
     uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)sample_rate);
-    uint32_t phi = 0; //nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us);
+    // uint32_t phi = nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us); // absolute phase
+    // uint32_t phi = 0; // relative phase
 
-    double att = db_to_mag(db);
-    //size_t att_steps = 10;
+    double n_att = db_to_mag(db);
+    double g_att = db_to_mag(g_db);
+    g_db = db;
+    g_hz = freq_hz;
 
     size_t end = (size_t)(time_us * sample_rate / 1000000.0);
     for (size_t t = 0; t < end; ++t) {
 
         // ramp in and out
-        //double att_in = t < att_steps ? (1.0 / att_steps) * t : 1.0;
-        //double att_out = t + att_steps > end ? (1.0 / att_steps) * (end - t) : 1.0;
+        double att = t < filter_len ? filter_out[t] * g_att + filter_in[t] * n_att : n_att;
 
         // complex I/Q
-        double x = nco_cos(phi) * gain * att;// * att_in * att_out;
-        double y = nco_sin(phi) * gain * att;// * att_in * att_out;
+        double x = nco_cos(phi) * gain * att;
+        double y = nco_sin(phi) * gain * att;
         phi += d_phi;
 
         // disturb
@@ -241,6 +273,7 @@ static void gen(char *outpath, tone_t *tones)
 {
     init_db_lut();
     nco_init();
+    init_filter(50);
 
     if (!outpath || !*outpath || !strcmp(outpath, "-"))
         fd = fileno(stdout);
@@ -256,9 +289,10 @@ static void gen(char *outpath, tone_t *tones)
     clock_t start = clock();
 
     size_t signal_length_us = 0;
-    for (tone_t *tone = tones; tone->us && !do_exit; ++tone) {
+    for (tone_t *tone = tones; (tone->us || tone->hz) && !do_exit; ++tone) {
         if (tone->db < -24) {
-            add_noise((size_t)tone->us, tone->db);
+            //add_noise((size_t)tone->us, tone->db);
+            add_sine(g_hz, (size_t)tone->us, tone->db);
         }
         else {
             add_sine(tone->hz, (size_t)tone->us, tone->db);
@@ -293,6 +327,50 @@ static double sine_pk_level(char *arg, const char *error_hint)
     return level;
 }
 
+static void set_defaults(pulse_setup_t *params, char const *name)
+{
+    if (name && (*name == 'F' || *name == 'f')) {
+        // FSK
+        params->freq_mark   = 50000;
+        params->freq_space  = -50000;
+        params->att_mark    = -1;
+        params->att_space   = -1;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+    else if (name && (*name == 'A' || *name == 'a')) {
+        // ASK
+        params->freq_mark   = 100000;
+        params->freq_space  = 100000;
+        params->att_mark    = -1;
+        params->att_space   = -18;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+    else if (name && (*name == 'P' || *name == 'p')) {
+        // PSK
+        params->freq_mark   = 100000;
+        params->freq_space  = 100000;
+        params->att_mark    = -1;
+        params->att_space   = -1;
+        params->phase_mark  = 180;
+        params->phase_space = 180;
+        params->time_base   = 1000000;
+    }
+    else {
+        // OOK
+        params->freq_mark   = 100000;
+        params->freq_space  = 0;
+        params->att_mark    = -1;
+        params->att_space   = -100;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+}
+
 int main(int argc, char **argv)
 {
     int verbosity = 0;
@@ -301,13 +379,16 @@ int main(int argc, char **argv)
     double *next_f = base_f;
     char *filename = NULL;
 
-    symbol_t *symbols = NULL;
+    pulse_setup_t defaults;
+    set_defaults(&defaults, "OOK");
+
+    char *pulse_text = NULL;
     unsigned rand_seed = 1;
 
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:f:n:N:g:b:r:c:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:t:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -319,8 +400,17 @@ int main(int argc, char **argv)
         case 's':
             sample_rate = atod_metric(optarg, "-s: ");
             break;
+        case 'm':
+            set_defaults(&defaults, optarg);
+            break;
         case 'f':
             *next_f++ = atod_metric(optarg, "-f: ");
+            break;
+        case 'a':
+            *next_f++ = atod_metric(optarg, "-a: ");
+            break;
+        case 'p':
+            *next_f++ = atod_metric(optarg, "-p: ");
             break;
         case 'n':
             noise_floor = noise_pp_level(optarg, "-n: ");
@@ -335,10 +425,10 @@ int main(int argc, char **argv)
             out_block_size = atouint32_metric(optarg, "-b: ");
             break;
         case 'r':
-            symbols = parse_code_file(optarg, symbols);
+            pulse_text = read_text_file(optarg);
             break;
-        case 'c':
-            symbols = parse_code(optarg, symbols);
+        case 't':
+            pulse_text = strdup(optarg);
             break;
         case 'S':
             rand_seed = (unsigned)atoi(optarg);
@@ -348,9 +438,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (!symbols) {
+    if (!pulse_text) {
         fprintf(stderr, "Input from stdin.\n");
-        symbols = parse_code(read_text_fd(fileno(stdin), "STDIN"), symbols);
+        pulse_text = read_text_fd(fileno(stdin), "STDIN");
     }
 
     if (argc <= optind) {
@@ -392,6 +482,12 @@ int main(int argc, char **argv)
 
     signal_out = format_out[sample_format];
     srand(rand_seed);
-    gen(filename, symbols->tone);
-    free_symbols(symbols);
+
+    tone_t *tones = parse_pulses(pulse_text, &defaults);
+    if (verbosity)
+        output_pulses(tones);
+    gen(filename, tones);
+    free(tones);
+
+    free(pulse_text);
 }

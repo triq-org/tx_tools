@@ -109,14 +109,19 @@ endif()
 add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
-add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/utils/optparse.c)
+add_executable(pulse_gen src/pulse_gen.c src/pulse_parse.c src/transform.c src/utils/optparse.c src/common.c)
+if(UNIX)
+target_link_libraries(pulse_gen m)
+endif()
+
+add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/utils/optparse.c src/common.c)
 if(UNIX)
 target_link_libraries(code_gen m)
 endif()
 
-add_executable(code_dump src/code_dump.c src/code_parse.c src/transform.c)
+add_executable(code_dump src/code_dump.c src/code_parse.c src/transform.c src/common.c)
 
-add_executable(example_gen src/example_gen.c src/code_parse.c src/transform.c)
+add_executable(example_gen src/example_gen.c src/code_parse.c src/transform.c src/common.c)
 
 add_executable(fast_osc_tests src/fast_osc_tests.c)
 if(UNIX)

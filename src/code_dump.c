@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include "code_parse.h"
+#include "common.h"
 
 int main(int argc, char **argv)
 {
