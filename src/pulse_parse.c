@@ -67,7 +67,7 @@ static void parse_param(char const **buf, pulse_setup_t *params)
     *buf = p;
 }
 
-static unsigned parse_len(char const **buf)
+static int parse_len(char const **buf)
 {
     char const *p = *buf;
 
@@ -79,13 +79,20 @@ static unsigned parse_len(char const **buf)
         exit(1);
     }
 
-    if (val < 0.0) {
+    if (val < -0x80000000 && val >= 0x80000000 ) {
+        fprintf(stderr, "out of range number argument (%f)\n", val);
+        exit(1);
+    }
+
+    int ival = (int)val;
+
+    if (ival < 0 && ival != -1) {
         fprintf(stderr, "non-negative number argument expected (%f)\n", val);
         exit(1);
     }
 
     *buf = endptr;
-    return (unsigned)val;
+    return ival;
 }
 
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
@@ -95,7 +102,7 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     if (!defaults)
         return NULL;
 
-    unsigned len = 0;
+    // unsigned len = 0;
     unsigned count = 0;
 
     // read header and sum pulse length
@@ -109,10 +116,10 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
         }
         else if (*p) {
             // parse mark and space
-            unsigned mark = parse_len(&p);
-            unsigned space = parse_len(&p);
+            int mark = parse_len(&p);
+            int space = parse_len(&p);
 
-            len += mark + space;
+            // len += mark + space;
             count += 2;
         }
     }
@@ -126,8 +133,26 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     while (*p) {
         skip_ws_c(&p);
         // parse mark and space
-        unsigned mark  = parse_len(&p);
-        unsigned space = parse_len(&p);
+        int mark  = parse_len(&p);
+        int space = parse_len(&p);
+
+        if (mark == -1) {
+            // special case: silence
+
+            tone_t *t = &tones[i++];
+            t->hz = defaults->freq_mark;
+            t->db = defaults->att_mark;
+            t->ph = defaults->phase_mark;
+            t->us = 0;
+
+            t = &tones[i++];
+            t->hz = defaults->freq_space;
+            t->db = -200;
+            t->ph = defaults->phase_space;
+            t->us = (int)((uint64_t)space * 1000000 / defaults->time_base);
+
+            continue;
+        }
 
         // gen mark
         tone_t *t = &tones[i++];

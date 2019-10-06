@@ -21,6 +21,7 @@
 #define INCLUDE_COMMON_H_
 
 #include <stdint.h>
+#include <stddef.h> /* size_t */
 
 #define READ_CHUNK_SIZE 8192
 
@@ -36,8 +37,11 @@ enum sample_format {
     FORMAT_NONE,
     FORMAT_CU8,
     FORMAT_CS8,
+    FORMAT_CS12,
     FORMAT_CS16,
+    FORMAT_CS32,
     FORMAT_CF32,
+    FORMAT_CF64,
 };
 
 typedef struct {
@@ -48,6 +52,8 @@ typedef struct {
 } tone_t;
 
 // helper for sample formats
+
+size_t sample_format_length(enum sample_format format);
 
 char const *sample_format_str(enum sample_format format);
 

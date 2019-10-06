@@ -31,6 +31,29 @@
 
 // format helper
 
+size_t sample_format_length(enum sample_format format)
+{
+    switch (format) {
+    case FORMAT_NONE:
+        return 2 * sizeof(uint8_t);
+    case FORMAT_CU8:
+        return 2 * sizeof(uint8_t);
+    case FORMAT_CS8:
+        return 2 * sizeof(int8_t);
+    case FORMAT_CS12:
+        return 2 * 3 * sizeof(int8_t);
+    case FORMAT_CS16:
+        return 2 * sizeof(int16_t);
+    case FORMAT_CS32:
+        return 2 * sizeof(int32_t);
+    case FORMAT_CF32:
+        return 2 * sizeof(float);
+    case FORMAT_CF64:
+        return 2 * sizeof(double);
+    }
+    return 2 * sizeof(uint8_t);
+}
+
 char const *sample_format_str(enum sample_format format)
 {
     switch (format) {
@@ -40,10 +63,16 @@ char const *sample_format_str(enum sample_format format)
         return "CU8";
     case FORMAT_CS8:
         return "CS8";
+    case FORMAT_CS12:
+        return "CS12";
     case FORMAT_CS16:
         return "CS16";
+    case FORMAT_CS32:
+        return "CS32";
     case FORMAT_CF32:
         return "CF32";
+    case FORMAT_CF64:
+        return "CF64";
     }
     return "unknown";
 }
@@ -73,13 +102,25 @@ enum sample_format file_info(char **path)
             || (ext && (!strcmp(ext, ".CS8") || !strcmp(ext, ".cs8")))) {
         return FORMAT_CS8;
     }
+    else if ((colon && (!strcmp(colon, "CS12") || !strcmp(colon, "cs12")))
+            || (ext && (!strcmp(ext, ".CS12") || !strcmp(ext, ".cs12")))) {
+        return FORMAT_CS12;
+    }
     else if ((colon && (!strcmp(colon, "CS16") || !strcmp(colon, "cs16")))
             || (ext && (!strcmp(ext, ".CS16") || !strcmp(ext, ".cs16")))) {
         return FORMAT_CS16;
     }
+    else if ((colon && (!strcmp(colon, "CS32") || !strcmp(colon, "cs32")))
+            || (ext && (!strcmp(ext, ".CS32") || !strcmp(ext, ".cs32")))) {
+        return FORMAT_CS32;
+    }
     else if ((colon && (!strcmp(colon, "CF32") || !strcmp(colon, "cf32")))
             || (ext && (!strcmp(ext, ".CF32") || !strcmp(ext, ".cf32")))) {
         return FORMAT_CF32;
+    }
+    else if ((colon && (!strcmp(colon, "CF64") || !strcmp(colon, "cf64")))
+            || (ext && (!strcmp(ext, ".CF64") || !strcmp(ext, ".cf64")))) {
+        return FORMAT_CF64;
     }
 
     return FORMAT_NONE;

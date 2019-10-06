@@ -154,7 +154,13 @@ int main(int argc, char **argv)
     double *next_f = base_f;
     char *filename = NULL;
 
-    iq_render_t spec = {0};
+    iq_render_t spec = {
+            .sample_rate  = DEFAULT_SAMPLE_RATE,
+            .noise_floor  = -19,
+            .noise_signal = -25,
+            .gain         = -3,
+            .frame_size   = DEFAULT_BUF_LENGTH,
+    };
 
     pulse_setup_t defaults;
     set_defaults(&defaults, "OOK");
@@ -234,7 +240,8 @@ int main(int argc, char **argv)
     }
 
     spec.sample_format = file_info(&filename);
-    fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
+    if (verbosity)
+        fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
 
     if (spec.frame_size < MINIMAL_BUF_LENGTH ||
             spec.frame_size > MAXIMAL_BUF_LENGTH) {
@@ -260,9 +267,22 @@ int main(int argc, char **argv)
     srand(rand_seed);
 
     tone_t *tones = parse_pulses(pulse_text, &defaults);
-    if (verbosity)
+
+    if (verbosity > 1)
         output_pulses(tones);
+
+    if (verbosity) {
+        size_t length_us = iq_render_length_us(tones);
+        size_t length_smp = iq_render_length_smp(&spec, tones);
+        fprintf(stderr, "Signal length: %zu us, %zu smp\n\n", length_us, length_smp);
+    }
+
     iq_render_file(filename, &spec, tones);
+    // void *buf;
+    // size_t len;
+    // iq_render_buf(&spec, tones, &buf, &len);
+    // free(buf);
+
     free(tones);
 
     free(pulse_text);

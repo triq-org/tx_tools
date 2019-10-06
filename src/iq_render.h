@@ -32,7 +32,7 @@ typedef struct iq_render {
     double sample_rate;
     double noise_floor;  ///< peak-to-peak
     double noise_signal; ///< peak-to-peak
-    double gain;         ///< usually a little below 1.0
+    double gain;         ///< usually a little below 0
     enum sample_format sample_format;
     size_t frame_size; ///< default will be used if 0
 } iq_render_t;
@@ -41,8 +41,12 @@ typedef struct iq_render {
 
 extern int abort_render;
 
+size_t iq_render_length_us(tone_t *tones);
+
+size_t iq_render_length_smp(iq_render_t *spec, tone_t *tones);
+
 int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones);
 
-int iq_render_buf(tone_t *tones, iq_render_t *spec, void **out_buf, size_t *out_len);
+int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_len);
 
 #endif /* INCLUDE_IQRENDER_H_ */

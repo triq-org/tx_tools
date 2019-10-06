@@ -49,9 +49,9 @@
 int abort_render = 0;
 
 static double sample_rate  = DEFAULT_SAMPLE_RATE;
-static double noise_floor  = 0.1 * 2;  ///< peak-to-peak
-static double noise_signal = 0.05 * 2; ///< peak-to-peak
-static double gain         = 1.0;      ///< sine-peak
+static double noise_floor  = 0.1 * 2;  ///< peak-to-peak (-19 dB)
+static double noise_signal = 0.05 * 2; ///< peak-to-peak (-25 dB)
+static double gain         = 1.0;      ///< sine-peak (-0 dB)
 
 static enum sample_format sample_format = FORMAT_NONE;
 static size_t frame_size                = DEFAULT_BUF_LENGTH;
@@ -195,11 +195,20 @@ static void init_filter(size_t time_us)
     }
 }
 
-static void add_sine(double freq_hz, size_t time_us, int db)
+static void add_sine(double freq_hz, size_t time_us, int db, int ph)
 {
     uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)sample_rate);
     // uint32_t phi = nco_phase((ssize_t)freq_hz, (size_t)sample_rate, global_time_us); // absolute phase
     // uint32_t phi = 0; // relative phase
+
+    // phase offset if requested
+    while (ph < 0)
+        ph += 360;
+    while (ph >= 360)
+        ph -= 360;
+    if (ph) {
+        phi += 11930465 * (uint32_t)ph; // (0x100000000 / 360)
+    }
 
     double n_att = db_to_mag(db);
     double g_att = db_to_mag(g_db);
@@ -225,6 +234,33 @@ static void add_sine(double freq_hz, size_t time_us, int db)
     }
 }
 
+size_t iq_render_length_us(tone_t *tones)
+{
+    size_t signal_length_us = 0;
+
+    for (tone_t *tone = tones; (tone->us || tone->hz) && !abort_render; ++tone) {
+        signal_length_us += (size_t)tone->us;
+    }
+
+    return signal_length_us;
+}
+
+size_t iq_render_length_smp(iq_render_t *spec, tone_t *tones)
+{
+    if (spec->sample_rate == 0.0)
+        spec->sample_rate = DEFAULT_SAMPLE_RATE;
+    sample_rate = spec->sample_rate;
+
+    size_t signal_length_samples = 0;
+
+    for (tone_t *tone = tones; (tone->us || tone->hz) && !abort_render; ++tone) {
+        size_t len = (size_t)(tone->us * sample_rate / 1000000.0);
+        signal_length_samples += len;
+    }
+
+    return signal_length_samples;
+}
+
 static void iq_render_init(iq_render_t *spec)
 {
     if (spec->sample_rate == 0.0)
@@ -245,6 +281,24 @@ static void iq_render_init(iq_render_t *spec)
     init_filter(50);
 }
 
+static size_t iq_render(tone_t *tones)
+{
+    size_t signal_length_us = 0;
+
+    for (tone_t *tone = tones; (tone->us || tone->hz) && !abort_render; ++tone) {
+        if (tone->db < -24) {
+            //add_noise((size_t)tone->us, tone->db);
+            add_sine(g_hz, (size_t)tone->us, tone->db, tone->ph);
+        }
+        else {
+            add_sine(tone->hz, (size_t)tone->us, tone->db, tone->ph);
+        }
+        signal_length_us += (size_t)tone->us;
+    }
+
+    return signal_length_us;
+}
+
 int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
 {
     iq_render_init(spec);
@@ -262,17 +316,7 @@ int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
 
     clock_t start = clock();
 
-    size_t signal_length_us = 0;
-    for (tone_t *tone = tones; (tone->us || tone->hz) && !abort_render; ++tone) {
-        if (tone->db < -24) {
-            //add_noise((size_t)tone->us, tone->db);
-            add_sine(g_hz, (size_t)tone->us, tone->db);
-        }
-        else {
-            add_sine(tone->hz, (size_t)tone->us, tone->db);
-        }
-        signal_length_us += (size_t)tone->us;
-    }
+    size_t signal_length_us = iq_render(tones);
     signal_out_flush();
 
     clock_t stop = clock();
@@ -286,8 +330,31 @@ int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
     return 0;
 }
 
-
-int iq_render_buf(tone_t *tones, iq_render_t *spec, void **out_buf, size_t *out_len)
+int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_len)
 {
-    return -1;
+    iq_render_init(spec);
+    size_t smp = iq_render_length_smp(spec, tones);
+    frame_size = smp * sample_format_length(sample_format);
+
+    out_block.u8 = malloc(frame_size);
+    if (!out_block.u8) {
+        fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", frame_size);
+        exit(1);
+    }
+
+    frame_size += 1; // this way we never try to flush
+
+    clock_t start = clock();
+
+    size_t signal_length_us = iq_render(tones);
+
+    clock_t stop = clock();
+    double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;
+    printf("Time elapsed %g ms, signal lenght %g ms, speed %gx\n", elapsed, signal_length_us / 1000.0, signal_length_us / 1000.0 / elapsed);
+
+    if (out_buf)
+        *out_buf = out_block.u8;
+    if (out_len)
+        *out_len = frame_size - 1;
+    return 0;
 }

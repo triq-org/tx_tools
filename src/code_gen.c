@@ -104,7 +104,13 @@ int main(int argc, char **argv)
     double *next_f = base_f;
     char *filename = NULL;
 
-    iq_render_t spec = {0};
+    iq_render_t spec = {
+            .sample_rate  = DEFAULT_SAMPLE_RATE,
+            .noise_floor  = -19,
+            .noise_signal = -25,
+            .gain         = -3,
+            .frame_size   = DEFAULT_BUF_LENGTH,
+    };
 
     symbol_t *symbols = NULL;
     unsigned rand_seed = 1;
@@ -172,7 +178,8 @@ int main(int argc, char **argv)
     }
 
     spec.sample_format = file_info(&filename);
-    fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
+    if (verbosity)
+        fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
 
     if (spec.frame_size < MINIMAL_BUF_LENGTH ||
             spec.frame_size > MAXIMAL_BUF_LENGTH) {
@@ -197,8 +204,15 @@ int main(int argc, char **argv)
 
     srand(rand_seed);
 
-    if (verbosity)
+    if (verbosity > 1)
         output_symbol(symbols);
+
+    if (verbosity) {
+        size_t length_us = iq_render_length_us(symbols->tone);
+        size_t length_smp = iq_render_length_smp(&spec, symbols->tone);
+        fprintf(stderr, "Signal length: %zu us, %zu smp\n\n", length_us, length_smp);
+    }
+
     iq_render_file(filename, &spec, symbols->tone);
 
     free_symbols(symbols);
