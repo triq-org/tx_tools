@@ -102,50 +102,6 @@ static void sighandler(int signum)
 }
 #endif
 
-static void set_defaults(pulse_setup_t *params, char const *name)
-{
-    if (name && (*name == 'F' || *name == 'f')) {
-        // FSK
-        params->freq_mark   = 50000;
-        params->freq_space  = -50000;
-        params->att_mark    = -1;
-        params->att_space   = -1;
-        params->phase_mark  = 0;
-        params->phase_space = 0;
-        params->time_base   = 1000000;
-    }
-    else if (name && (*name == 'A' || *name == 'a')) {
-        // ASK
-        params->freq_mark   = 100000;
-        params->freq_space  = 100000;
-        params->att_mark    = -1;
-        params->att_space   = -18;
-        params->phase_mark  = 0;
-        params->phase_space = 0;
-        params->time_base   = 1000000;
-    }
-    else if (name && (*name == 'P' || *name == 'p')) {
-        // PSK
-        params->freq_mark   = 100000;
-        params->freq_space  = 100000;
-        params->att_mark    = -1;
-        params->att_space   = -1;
-        params->phase_mark  = 180;
-        params->phase_space = 180;
-        params->time_base   = 1000000;
-    }
-    else {
-        // OOK
-        params->freq_mark   = 100000;
-        params->freq_space  = 0;
-        params->att_mark    = -1;
-        params->att_space   = -100;
-        params->phase_mark  = 0;
-        params->phase_space = 0;
-        params->time_base   = 1000000;
-    }
-}
-
 int main(int argc, char **argv)
 {
     int verbosity = 0;
@@ -154,16 +110,11 @@ int main(int argc, char **argv)
     double *next_f = base_f;
     char *filename = NULL;
 
-    iq_render_t spec = {
-            .sample_rate  = DEFAULT_SAMPLE_RATE,
-            .noise_floor  = -19,
-            .noise_signal = -25,
-            .gain         = -3,
-            .frame_size   = DEFAULT_BUF_LENGTH,
-    };
+    iq_render_t spec = {0};
+    iq_render_defaults(&spec);
 
-    pulse_setup_t defaults;
-    set_defaults(&defaults, "OOK");
+    pulse_setup_t defaults = {0};
+    pulse_setup_defaults(&defaults, "OOK");
 
     char *pulse_text = NULL;
     unsigned rand_seed = 1;
@@ -184,7 +135,7 @@ int main(int argc, char **argv)
             spec.sample_rate = atod_metric(optarg, "-s: ");
             break;
         case 'm':
-            set_defaults(&defaults, optarg);
+            pulse_setup_defaults(&defaults, optarg);
             break;
         case 'f':
             *next_f++ = atod_metric(optarg, "-f: ");

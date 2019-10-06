@@ -41,6 +41,8 @@ typedef struct iq_render {
 
 extern int abort_render;
 
+void iq_render_defaults(iq_render_t *spec);
+
 size_t iq_render_length_us(tone_t *tones);
 
 size_t iq_render_length_smp(iq_render_t *spec, tone_t *tones);

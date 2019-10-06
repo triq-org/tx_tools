@@ -104,13 +104,8 @@ int main(int argc, char **argv)
     double *next_f = base_f;
     char *filename = NULL;
 
-    iq_render_t spec = {
-            .sample_rate  = DEFAULT_SAMPLE_RATE,
-            .noise_floor  = -19,
-            .noise_signal = -25,
-            .gain         = -3,
-            .frame_size   = DEFAULT_BUF_LENGTH,
-    };
+    iq_render_t spec = {0};
+    iq_render_defaults(&spec);
 
     symbol_t *symbols = NULL;
     unsigned rand_seed = 1;

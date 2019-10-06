@@ -34,6 +34,8 @@ typedef struct pulse_setup {
 
 // parsing pulse data from string or reading in
 
+void pulse_setup_defaults(pulse_setup_t *params, char const *name);
+
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults);
 
 tone_t *parse_pulses_file(char const *filename, pulse_setup_t *defaults);

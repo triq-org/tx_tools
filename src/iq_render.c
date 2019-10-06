@@ -261,6 +261,15 @@ size_t iq_render_length_smp(iq_render_t *spec, tone_t *tones)
     return signal_length_samples;
 }
 
+void iq_render_defaults(iq_render_t *spec)
+{
+    spec->sample_rate  = DEFAULT_SAMPLE_RATE;
+    spec->noise_floor  = -19;
+    spec->noise_signal = -25;
+    spec->gain         = -3;
+    spec->frame_size   = DEFAULT_BUF_LENGTH;
+}
+
 static void iq_render_init(iq_render_t *spec)
 {
     if (spec->sample_rate == 0.0)

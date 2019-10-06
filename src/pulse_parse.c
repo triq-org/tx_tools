@@ -95,6 +95,50 @@ static int parse_len(char const **buf)
     return ival;
 }
 
+void pulse_setup_defaults(pulse_setup_t *params, char const *name)
+{
+    if (name && (*name == 'F' || *name == 'f')) {
+        // FSK
+        params->freq_mark   = 50000;
+        params->freq_space  = -50000;
+        params->att_mark    = -1;
+        params->att_space   = -1;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+    else if (name && (*name == 'A' || *name == 'a')) {
+        // ASK
+        params->freq_mark   = 100000;
+        params->freq_space  = 100000;
+        params->att_mark    = -1;
+        params->att_space   = -18;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+    else if (name && (*name == 'P' || *name == 'p')) {
+        // PSK
+        params->freq_mark   = 100000;
+        params->freq_space  = 100000;
+        params->att_mark    = -1;
+        params->att_space   = -1;
+        params->phase_mark  = 180;
+        params->phase_space = 180;
+        params->time_base   = 1000000;
+    }
+    else {
+        // OOK
+        params->freq_mark   = 100000;
+        params->freq_space  = 0;
+        params->att_mark    = -1;
+        params->att_space   = -100;
+        params->phase_mark  = 0;
+        params->phase_space = 0;
+        params->time_base   = 1000000;
+    }
+}
+
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
 {
     if (!pulses || !*pulses)
