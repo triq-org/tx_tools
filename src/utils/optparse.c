@@ -186,7 +186,7 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    char *endptr    = (char *)str;
+    char *endptr    = NULL;
     double val      = 0.0;
     unsigned colons = 0;
 
@@ -281,7 +281,7 @@ double atod_fraction(const char *str, const char *error_hint)
         exit(1);
     }
 
-    char *endptr = (char *)str;
+    char *endptr = NULL;
     double frac  = strtod(str, &endptr);
 
     if (str == endptr) {
