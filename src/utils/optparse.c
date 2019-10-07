@@ -103,11 +103,6 @@ double atod_metric(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if (val < 0.0) {
-        fprintf(stderr, "%snon-negative number argument expected (%f)\n", error_hint, val);
-        exit(1);
-    }
-
     // allow whitespace before suffix
     while (*endptr == ' ' || *endptr == '\t')
         ++endptr;
@@ -135,9 +130,37 @@ double atod_metric(const char *str, const char *error_hint)
     return val;
 }
 
-uint32_t atouint32_metric(const char *str, const char *error_hint)
+double atodu_metric(const char *str, const char *error_hint)
 {
     double val = atod_metric(str, error_hint);
+
+    if (val < 0.0) {
+        fprintf(stderr, "%snon-negative number argument expected (%f)\n", error_hint, val);
+        exit(1);
+    }
+
+    return val;
+}
+
+int atoi_metric(const char *str, const char *error_hint)
+{
+    double val = atod_metric(str, error_hint);
+
+    if (val > UINT32_MAX || val < -UINT32_MAX) {
+        fprintf(stderr, "%snumber argument too big (%f)\n", error_hint, val);
+        exit(1);
+    }
+
+    if ((int)((val - (int)val) * 1e6) != 0) {
+        fprintf(stderr, "%sdecimal fraction (%f) did you forget k, M, or G suffix?\n", error_hint, val - (int)val);
+    }
+
+    return (int)val;
+}
+
+uint32_t atou_metric(const char *str, const char *error_hint)
+{
+    double val = atodu_metric(str, error_hint);
 
     if (val > UINT32_MAX) {
         fprintf(stderr, "%snumber argument too big (%f)\n", error_hint, val);
@@ -349,14 +372,14 @@ int main(int argc, char **argv)
     unsigned passed = 0;
     unsigned failed = 0;
 
-    fprintf(stderr, "optparse:: atouint32_metric\n");
-    ASSERT_EQUALS(atouint32_metric("0", ""), 0);
-    ASSERT_EQUALS(atouint32_metric("1", ""), 1);
-    ASSERT_EQUALS(atouint32_metric("0.0", ""), 0);
-    ASSERT_EQUALS(atouint32_metric("1.0", ""), 1);
-    ASSERT_EQUALS(atouint32_metric("1.024k", ""), 1024);
-    ASSERT_EQUALS(atouint32_metric("433.92MHz", ""), 433920000);
-    ASSERT_EQUALS(atouint32_metric(" +1 G ", ""), 1000000000);
+    fprintf(stderr, "optparse:: atou_metric\n");
+    ASSERT_EQUALS(atou_metric("0", ""), 0);
+    ASSERT_EQUALS(atou_metric("1", ""), 1);
+    ASSERT_EQUALS(atou_metric("0.0", ""), 0);
+    ASSERT_EQUALS(atou_metric("1.0", ""), 1);
+    ASSERT_EQUALS(atou_metric("1.024k", ""), 1024);
+    ASSERT_EQUALS(atou_metric("433.92MHz", ""), 433920000);
+    ASSERT_EQUALS(atou_metric(" +1 G ", ""), 1000000000);
 
     fprintf(stderr, "optparse:: atoi_time\n");
     ASSERT_EQUALS(atoi_time("0", ""), 0);

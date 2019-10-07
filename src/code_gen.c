@@ -73,7 +73,7 @@ static void usage(int exitcode)
             "\t[-r file] read code from file ('-' reads from stdin)\n"
             "\t[-t code_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
-            "\t[-F full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
+            "\t[-M full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
             "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
     exit(exitcode);
 }
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:f:n:N:g:b:r:w:t:F:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:f:n:N:g:b:r:w:t:M:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -124,7 +124,7 @@ int main(int argc, char **argv)
             verbosity++;
             break;
         case 's':
-            spec.sample_rate = atod_metric(optarg, "-s: ");
+            spec.sample_rate = atodu_metric(optarg, "-s: ");
             break;
         case 'f':
             *next_f++ = atod_metric(optarg, "-f: ");
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
             spec.gain = atod_metric(optarg, "-g: ");
             break;
         case 'b':
-            spec.frame_size = atouint32_metric(optarg, "-b: ");
+            spec.frame_size = atou_metric(optarg, "-b: ");
             break;
         case 'r':
             symbols = parse_code_file(optarg, symbols);
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
         case 't':
             symbols = parse_code(optarg, symbols);
             break;
-        case 'F':
+        case 'M':
             spec.full_scale = atof(optarg);
             break;
         case 'S':

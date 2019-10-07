@@ -52,6 +52,26 @@ char *hostport_param(char *param, char **host, char **port);
 /// @return parsed number value
 double atod_metric(const char *str, const char *error_hint);
 
+/// Convert a string to a non-negative double, uses strtod() and accepts
+/// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
+///
+/// Parse errors will fprintf(stderr, ...) and exit(1).
+///
+/// @param str: character string to parse
+/// @param error_hint: prepended to error output
+/// @return parsed number value
+double atodu_metric(const char *str, const char *error_hint);
+
+/// Convert a string to an integer, uses strtod() and accepts
+/// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
+///
+/// Parse errors will fprintf(stderr, ...) and exit(1).
+///
+/// @param str: character string to parse
+/// @param error_hint: prepended to error output
+/// @return parsed number value
+int atoi_metric(const char *str, const char *error_hint);
+
 /// Convert a string to an unsigned integer, uses strtod() and accepts
 /// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
 ///
@@ -60,7 +80,7 @@ double atod_metric(const char *str, const char *error_hint);
 /// @param str: character string to parse
 /// @param error_hint: prepended to error output
 /// @return parsed number value
-uint32_t atouint32_metric(const char *str, const char *error_hint);
+uint32_t atou_metric(const char *str, const char *error_hint);
 
 /// Convert a string to an integer, uses strtod() and accepts
 /// time suffixes of 'd', 'h', 'm', and 's' (also 'D', 'H', 'M', and 'S'),

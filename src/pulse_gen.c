@@ -66,9 +66,9 @@ static void usage(int exitcode)
             "\t[-v] Increase verbosity (can be used multiple times).\n"
             "\t[-s sample_rate (default: 2048000 Hz)]\n"
             "\t[-m OOK|ASK|FSK|PSK] preset mode defaults\n"
-            "\t[-f frequency Hz] adds a base frequency (use twice with e.g. 2FSK)\n"
-            "\t[-a attenuation dB] adds a base attenuation (use twice with e.g. ASK)\n"
-            "\t[-p phase deg] adds a base phase (use twice with e.g. PSK)\n"
+            "\t[-f|-F frequency Hz] set default mark|space frequency\n"
+            "\t[-a|-A attenuation dB] set default mark|space attenuation\n"
+            "\t[-p|-P phase deg] set default mark|space phase\n"
             "\t[-n noise floor dBFS or multiplier]\n"
             "\t[-N noise on signal dBFS or multiplier]\n"
             "\t Noise level < 0 for attenuation in dBFS, otherwise amplitude multiplier, 0 is off.\n"
@@ -79,7 +79,7 @@ static void usage(int exitcode)
             "\t[-r file] read code from file ('-' reads from stdin)\n"
             "\t[-t pulse_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
-            "\t[-F full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
+            "\t[-M full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
             "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
     exit(exitcode);
 }
@@ -107,8 +107,6 @@ int main(int argc, char **argv)
 {
     int verbosity = 0;
 
-    double base_f[16] = {10000.0, -10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    double *next_f = base_f;
     char *wr_filename = NULL;
 
     iq_render_t spec = {0};
@@ -123,7 +121,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:w:t:F:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:m:f:F:a:A:p:P:n:N:g:b:r:w:t:M:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -133,19 +131,28 @@ int main(int argc, char **argv)
             verbosity++;
             break;
         case 's':
-            spec.sample_rate = atod_metric(optarg, "-s: ");
+            spec.sample_rate = atodu_metric(optarg, "-s: ");
             break;
         case 'm':
             pulse_setup_defaults(&defaults, optarg);
             break;
         case 'f':
-            *next_f++ = atod_metric(optarg, "-f: ");
+            defaults.freq_mark = atoi_metric(optarg, "-f: ");
             break;
         case 'a':
-            *next_f++ = atod_metric(optarg, "-a: ");
+            defaults.att_mark = atoi_metric(optarg, "-a: ");
             break;
         case 'p':
-            *next_f++ = atod_metric(optarg, "-p: ");
+            defaults.phase_mark = atoi_metric(optarg, "-p: ");
+            break;
+        case 'F':
+            defaults.freq_space = atoi_metric(optarg, "-F: ");
+            break;
+        case 'A':
+            defaults.att_space = atoi_metric(optarg, "-A: ");
+            break;
+        case 'P':
+            defaults.phase_space = atoi_metric(optarg, "-P: ");
             break;
         case 'n':
             spec.noise_floor = atod_metric(optarg, "-n: ");
@@ -157,7 +164,7 @@ int main(int argc, char **argv)
             spec.gain = atod_metric(optarg, "-g: ");
             break;
         case 'b':
-            spec.frame_size = atouint32_metric(optarg, "-b: ");
+            spec.frame_size = atou_metric(optarg, "-b: ");
             break;
         case 'r':
             pulse_text = read_text_file(optarg);
@@ -168,7 +175,7 @@ int main(int argc, char **argv)
         case 't':
             pulse_text = strdup(optarg);
             break;
-        case 'F':
+        case 'M':
             spec.full_scale = atof(optarg);
             break;
         case 'S':

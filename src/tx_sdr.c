@@ -140,7 +140,7 @@ int main(int argc, char **argv)
             tx.dev_query = optarg;
             break;
         case 'f':
-            tx.center_frequency = atod_metric(optarg, "-f: ");
+            tx.center_frequency = atodu_metric(optarg, "-f: ");
             break;
         case 'g':
             tx.gain_str = optarg;
@@ -149,26 +149,26 @@ int main(int argc, char **argv)
             tx.antenna = optarg;
             break;
         case 's':
-            tx.sample_rate = atod_metric(optarg, "-s: ");
+            tx.sample_rate = atodu_metric(optarg, "-s: ");
             break;
         case 'K':
-            tx.master_clock_rate = atod_metric(optarg, "-K: ");
+            tx.master_clock_rate = atodu_metric(optarg, "-K: ");
             break;
         case 'B':
-            tx.bandwidth = atod_metric(optarg, "-B: ");
+            tx.bandwidth = atodu_metric(optarg, "-B: ");
             break;
         case 'p':
             tx.ppm_error = atod_metric(optarg, "-p: ");
             break;
         case 'b':
-            tx.block_size = atouint32_metric(optarg, "-b: ");
+            tx.block_size = atou_metric(optarg, "-b: ");
             break;
         case 'n':
             // each sample is one I/Q pair (half the count of I and Q bytes)
-            tx.samples_to_write = atouint32_metric(optarg, "-n: ");
+            tx.samples_to_write = atou_metric(optarg, "-n: ");
             break;
         case 'l':
-            tx.loops = atouint32_metric(optarg, "-l: ");
+            tx.loops = atou_metric(optarg, "-l: ");
             break;
         case 'F':
             tx.input_format = tx_parse_soapy_format(optarg);
