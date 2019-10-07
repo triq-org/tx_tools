@@ -36,7 +36,10 @@ typedef enum stream_format {
     CS8  = 0x43533800,
     CS12 = 0x43533132,
     CS16 = 0x43533136,
+    CS32 = 0x43533332,
+    CS64 = 0x43533634,
     CF32 = 0x43463332,
+    CF64 = 0x43463634,
 } stream_format_t;
 
 typedef struct tx_cmd {
@@ -82,7 +85,7 @@ typedef struct tx_cmd {
 } tx_cmd_t;
 
 /// Parse SoapySDR format string.
-char const* tx_parse_soapy_format(char const *format);
+char const *tx_parse_sample_format(char const *format);
 
 /// Enumerate all devices.
 void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);

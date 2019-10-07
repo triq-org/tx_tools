@@ -43,7 +43,7 @@ int SoapySDRDevice_unmake_each(SoapySDRDevice **devices, const size_t length);
 
 // helpers
 
-char const *tx_parse_soapy_format(char const *format)
+char const *tx_parse_sample_format(char const *format)
 {
     if (strcasecmp(optarg, "CU8") == 0) {
         return SOAPY_SDR_CU8;
@@ -51,11 +51,20 @@ char const *tx_parse_soapy_format(char const *format)
     else if (strcasecmp(optarg, "CS8") == 0) {
         return SOAPY_SDR_CS8;
     }
+    else if (strcasecmp(optarg, "CS12") == 0) {
+        return SOAPY_SDR_CS12;
+    }
     else if (strcasecmp(optarg, "CS16") == 0) {
         return SOAPY_SDR_CS16;
     }
+    else if (strcasecmp(optarg, "CS32") == 0) {
+        return SOAPY_SDR_CS32;
+    }
     else if (strcasecmp(optarg, "CF32") == 0) {
         return SOAPY_SDR_CF32;
+    }
+    else if (strcasecmp(optarg, "CF64") == 0) {
+        return SOAPY_SDR_CF64;
     }
     else {
         return NULL;
@@ -74,7 +83,9 @@ static int check_format(stream_format_t format)
             || format == CS8
             || format == CS12
             || format == CS16
-            || format == CF32) {
+            || format == CS32
+            || format == CF32
+            || format == CF64) {
         return 0;
     }
     // unknown format

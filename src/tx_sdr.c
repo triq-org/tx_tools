@@ -42,9 +42,6 @@
 
 #include "optparse.h"
 #include "tx_lib.h"
-#include "convenience.h"
-#include <SoapySDR/Device.h>
-#include <SoapySDR/Formats.h>
 
 #define DEFAULT_SAMPLE_RATE 2048000
 
@@ -171,7 +168,7 @@ int main(int argc, char **argv)
             tx.loops = atou_metric(optarg, "-l: ");
             break;
         case 'F':
-            tx.input_format = tx_parse_soapy_format(optarg);
+            tx.input_format = tx_parse_sample_format(optarg);
             if (!tx.input_format) {
                 fprintf(stderr, "Unsupported output format: %s\n", optarg);
                 exit(1);
@@ -209,11 +206,11 @@ int main(int argc, char **argv)
     }
     // detect input format if not forced
     if (!tx.input_format) {
-        tx.input_format = tx_parse_soapy_format(ext);
+        tx.input_format = tx_parse_sample_format(ext);
     }
     if (!tx.input_format) {
         fprintf(stderr, "Unknown input format \"%s\", falling back to CU8.\n", ext);
-        tx.input_format = SOAPY_SDR_CU8;
+        tx.input_format = tx_parse_sample_format("CU8");
     }
 
     if (strcmp(filename, "-") == 0) { /* Read samples from stdin */
