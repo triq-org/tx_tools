@@ -59,7 +59,7 @@ __attribute__((noreturn))
 static void usage(int exitcode)
 {
     fprintf(stderr,
-            "pulse_gen, pulse data I/Q waveform generator\n\n"
+            "\npulse_gen, pulse data I/Q waveform generator\n\n"
             "Usage:"
             "\t[-h] Output this usage help and exit\n"
             "\t[-V] Output the version string and exit\n"
@@ -76,10 +76,10 @@ static void usage(int exitcode)
             "\t Gain level < 0 for attenuation in dBFS, otherwise amplitude multiplier, 0 is 0 dBFS.\n"
             "\t Levels as dbFS or multiplier are peak values, e.g. 0 dB or 1.0 x are equivalent to -3 dB RMS.\n"
             "\t[-b output_block_size (default: 16 * 16384) bytes]\n"
-            "\t[-r file_path (default: '-', read code from stdin)]\n"
+            "\t[-r file] read code from file ('-' reads from stdin)\n"
             "\t[-t pulse_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
-            "\tfilename (a '-' writes samples to stdout)\n\n");
+            "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
     exit(exitcode);
 }
 
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 
     double base_f[16] = {10000.0, -10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     double *next_f = base_f;
-    char *filename = NULL;
+    char *wr_filename = NULL;
 
     iq_render_t spec = {0};
     iq_render_defaults(&spec);
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:t:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:w:t:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -161,6 +161,9 @@ int main(int argc, char **argv)
         case 'r':
             pulse_text = read_text_file(optarg);
             break;
+        case 'w':
+            wr_filename = optarg;
+            break;
         case 't':
             pulse_text = strdup(optarg);
             break;
@@ -172,25 +175,22 @@ int main(int argc, char **argv)
         }
     }
 
+    if (argc > optind) {
+        fprintf(stderr, "\nExtra arguments? \"%s\"...\n", argv[optind]);
+        usage(1);
+    }
+
     if (!pulse_text) {
         fprintf(stderr, "Input from stdin.\n");
         pulse_text = read_text_fd(fileno(stdin), "STDIN");
     }
 
-    if (argc <= optind) {
+    if (!wr_filename) {
         fprintf(stderr, "Output to stdout.\n");
-        filename = "-";
-        exit(0);
-    }
-    else if (argc == optind + 1) {
-        filename = argv[optind];
-    }
-    else {
-        fprintf(stderr, "Extra arguments? \"%s\"...\n", argv[optind + 1]);
-        usage(1);
+        wr_filename = "-";
     }
 
-    spec.sample_format = file_info(&filename);
+    spec.sample_format = file_info(&wr_filename);
     if (verbosity)
         fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
 
@@ -228,7 +228,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Signal length: %zu us, %zu smp\n\n", length_us, length_smp);
     }
 
-    iq_render_file(filename, &spec, tones);
+    iq_render_file(wr_filename, &spec, tones);
     // void *buf;
     // size_t len;
     // iq_render_buf(&spec, tones, &buf, &len);

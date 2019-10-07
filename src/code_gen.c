@@ -59,7 +59,7 @@ __attribute__((noreturn))
 static void usage(int exitcode)
 {
     fprintf(stderr,
-            "code_gen, a simple I/Q waveform generator\n\n"
+            "\ncode_gen, a simple I/Q waveform generator\n\n"
             "Usage:"
             "\t[-s sample_rate (default: 2048000 Hz)]\n"
             "\t[-f frequency Hz] adds a base frequency (use twice with e.g. 2FSK)\n"
@@ -70,10 +70,10 @@ static void usage(int exitcode)
             "\t Gain level < 0 for attenuation in dBFS, otherwise amplitude multiplier, 0 is 0 dBFS.\n"
             "\t Levels as dbFS or multiplier are peak values, e.g. 0 dB or 1.0 x are equivalent to -3 dB RMS.\n"
             "\t[-b output_block_size (default: 16 * 16384) bytes]\n"
-            "\t[-r file_path (default: '-', read code from stdin)]\n"
-            "\t[-c code_text] parse given code text\n"
+            "\t[-r file] read code from file ('-' reads from stdin)\n"
+            "\t[-t code_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
-            "\tfilename (a '-' writes samples to stdout)\n\n");
+            "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
     exit(exitcode);
 }
 
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
     double base_f[16] = {10000.0, -10000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
     double *next_f = base_f;
-    char *filename = NULL;
+    char *wr_filename = NULL;
 
     iq_render_t spec = {0};
     iq_render_defaults(&spec);
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:f:n:N:g:b:r:c:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:f:n:N:g:b:r:w:t:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -143,7 +143,10 @@ int main(int argc, char **argv)
         case 'r':
             symbols = parse_code_file(optarg, symbols);
             break;
-        case 'c':
+        case 'w':
+            wr_filename = optarg;
+            break;
+        case 't':
             symbols = parse_code(optarg, symbols);
             break;
         case 'S':
@@ -154,25 +157,22 @@ int main(int argc, char **argv)
         }
     }
 
+    if (argc > optind) {
+        fprintf(stderr, "\nExtra arguments? \"%s\"...\n", argv[optind]);
+        usage(1);
+    }
+
     if (!symbols) {
         fprintf(stderr, "Input from stdin.\n");
         symbols = parse_code(read_text_fd(fileno(stdin), "STDIN"), symbols);
     }
 
-    if (argc <= optind) {
+    if (!wr_filename) {
         fprintf(stderr, "Output to stdout.\n");
-        filename = "-";
-        exit(0);
-    }
-    else if (argc == optind + 1) {
-        filename = argv[optind];
-    }
-    else {
-        fprintf(stderr, "Extra arguments? \"%s\"...\n", argv[optind + 1]);
-        usage(1);
+        wr_filename = "-";
     }
 
-    spec.sample_format = file_info(&filename);
+    spec.sample_format = file_info(&wr_filename);
     if (verbosity)
         fprintf(stderr, "Output format %s.\n", sample_format_str(spec.sample_format));
 
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Signal length: %zu us, %zu smp\n\n", length_us, length_smp);
     }
 
-    iq_render_file(filename, &spec, symbols->tone);
+    iq_render_file(wr_filename, &spec, symbols->tone);
 
     free_symbols(symbols);
 }
