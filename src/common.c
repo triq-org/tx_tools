@@ -41,11 +41,13 @@ size_t sample_format_length(enum sample_format format)
     case FORMAT_CS8:
         return 2 * sizeof(int8_t);
     case FORMAT_CS12:
-        return 2 * 3 * sizeof(int8_t);
+        return 3 * sizeof(uint8_t);
     case FORMAT_CS16:
         return 2 * sizeof(int16_t);
     case FORMAT_CS32:
         return 2 * sizeof(int32_t);
+    case FORMAT_CS64:
+        return 2 * sizeof(int64_t);
     case FORMAT_CF32:
         return 2 * sizeof(float);
     case FORMAT_CF64:
@@ -69,6 +71,8 @@ char const *sample_format_str(enum sample_format format)
         return "CS16";
     case FORMAT_CS32:
         return "CS32";
+    case FORMAT_CS64:
+        return "CS64";
     case FORMAT_CF32:
         return "CF32";
     case FORMAT_CF64:
@@ -114,6 +118,10 @@ enum sample_format file_info(char **path)
             || (ext && (!strcmp(ext, ".CS32") || !strcmp(ext, ".cs32")))) {
         return FORMAT_CS32;
     }
+    else if ((colon && (!strcmp(colon, "CS64") || !strcmp(colon, "cs64")))
+            || (ext && (!strcmp(ext, ".CS64") || !strcmp(ext, ".cs64")))) {
+        return FORMAT_CS64;
+    }
     else if ((colon && (!strcmp(colon, "CF32") || !strcmp(colon, "cf32")))
             || (ext && (!strcmp(ext, ".CF32") || !strcmp(ext, ".cf32")))) {
         return FORMAT_CF32;
@@ -121,6 +129,27 @@ enum sample_format file_info(char **path)
     else if ((colon && (!strcmp(colon, "CF64") || !strcmp(colon, "cf64")))
             || (ext && (!strcmp(ext, ".CF64") || !strcmp(ext, ".cf64")))) {
         return FORMAT_CF64;
+    }
+    // compatibility file extensions
+    else if ((colon && (!strcmp(colon, "DATA") || !strcmp(colon, "data")))
+            || (ext && (!strcmp(ext, ".DATA") || !strcmp(ext, ".data")))) {
+        return FORMAT_CU8;
+    }
+    else if ((colon && (!strcmp(colon, "CFILE") || !strcmp(colon, "cfile")))
+            || (ext && (!strcmp(ext, ".CFILE") || !strcmp(ext, ".cfile")))) {
+        return FORMAT_CF32;
+    }
+    else if ((colon && (!strcmp(colon, "COMPLEX16U") || !strcmp(colon, "complex16u")))
+            || (ext && (!strcmp(ext, ".COMPLEX16U") || !strcmp(ext, ".complex16u")))) {
+        return FORMAT_CU8;
+    }
+    else if ((colon && (!strcmp(colon, "COMPLEX16S") || !strcmp(colon, "complex16s")))
+            || (ext && (!strcmp(ext, ".COMPLEX16S") || !strcmp(ext, ".complex16s")))) {
+        return FORMAT_CS8;
+    }
+    else if ((colon && (!strcmp(colon, "COMPLEX") || !strcmp(colon, "complex")))
+            || (ext && (!strcmp(ext, ".COMPLEX") || !strcmp(ext, ".complex")))) {
+        return FORMAT_CF32;
     }
 
     return FORMAT_NONE;
