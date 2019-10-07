@@ -34,6 +34,7 @@ typedef struct iq_render {
     double noise_signal; ///< peak-to-peak
     double gain;         ///< usually a little below 0
     enum sample_format sample_format;
+    double full_scale; ///< full scale, useful for CS16/CS32, 0=max
     size_t frame_size; ///< default will be used if 0
 } iq_render_t;
 

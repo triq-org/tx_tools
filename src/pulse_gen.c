@@ -79,6 +79,7 @@ static void usage(int exitcode)
             "\t[-r file] read code from file ('-' reads from stdin)\n"
             "\t[-t pulse_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
+            "\t[-F full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
             "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
     exit(exitcode);
 }
@@ -122,7 +123,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:w:t:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:m:f:a:p:n:N:g:b:r:w:t:F:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -166,6 +167,9 @@ int main(int argc, char **argv)
             break;
         case 't':
             pulse_text = strdup(optarg);
+            break;
+        case 'F':
+            spec.full_scale = atof(optarg);
             break;
         case 'S':
             rand_seed = (unsigned)atoi(optarg);

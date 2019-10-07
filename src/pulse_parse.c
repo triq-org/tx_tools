@@ -254,7 +254,7 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
 
             tone_t *t = &tones[i++];
             t->hz = defaults->freq_mark;
-            t->db = defaults->att_mark;
+            t->db = -200; // don't disturb the filter
             t->ph = defaults->phase_mark;
             t->us = 0;
 

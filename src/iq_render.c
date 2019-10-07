@@ -54,7 +54,8 @@ static double noise_signal = 0.05 * 2; ///< peak-to-peak (-25 dB)
 static double gain         = 1.0;      ///< sine-peak (-0 dB)
 
 static enum sample_format sample_format = FORMAT_NONE;
-static size_t frame_size                = DEFAULT_BUF_LENGTH;
+static double full_scale = 0.0;
+static size_t frame_size = DEFAULT_BUF_LENGTH;
 
 static size_t out_block_len = 0;
 static size_t out_block_pos = 0;
@@ -116,9 +117,8 @@ typedef void (*signal_out_fn)(double i, double q);
 
 static void signal_out_cu8(double i, double q)
 {
-    double scale = 127.5; // scale to u8
-    uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * scale));
-    uint8_t q8 = (uint8_t)bound_u8((int)((q + 1.0) * scale));
+    uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * full_scale));
+    uint8_t q8 = (uint8_t)bound_u8((int)((q + 1.0) * full_scale));
     out_block.u8[out_block_pos++] = i8;
     out_block.u8[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(uint8_t);
@@ -130,9 +130,8 @@ static void signal_out_cu8(double i, double q)
 
 static void signal_out_cs8(double i, double q)
 {
-    double scale = 127.5; // scale to s8
-    int8_t i8 = (int8_t)bound_s8((int)(i * scale));
-    int8_t q8 = (int8_t)bound_s8((int)(q * scale));
+    int8_t i8 = (int8_t)bound_s8((int)(i * full_scale));
+    int8_t q8 = (int8_t)bound_s8((int)(q * full_scale));
     out_block.s8[out_block_pos++] = i8;
     out_block.s8[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int8_t);
@@ -144,9 +143,8 @@ static void signal_out_cs8(double i, double q)
 
 static void signal_out_cs12(double i, double q)
 {
-    double scale =  2047.5; // scale to s12
-    int16_t i8 = (int16_t)bound_s16((int)(i * scale));
-    int16_t q8 = (int16_t)bound_s16((int)(q * scale));
+    int16_t i8 = (int16_t)bound_s16((int)(i * full_scale));
+    int16_t q8 = (int16_t)bound_s16((int)(q * full_scale));
     // produce 24 bit (iiqIQQ), note the input is LSB aligned, scale=2048
     // note: byte0 = i[7:0]; byte1 = {q[3:0], i[11:8]}; byte2 = q[11:4];
     out_block.u8[out_block_pos++] = (uint8_t)(i8);
@@ -162,9 +160,8 @@ static void signal_out_cs12(double i, double q)
 
 static void signal_out_cs16(double i, double q)
 {
-    double scale = 32767.5; // scale to s16
-    int16_t i8 = (int16_t)bound_s16((int)(i * scale));
-    int16_t q8 = (int16_t)bound_s16((int)(q * scale));
+    int16_t i8 = (int16_t)bound_s16((int)(i * full_scale));
+    int16_t q8 = (int16_t)bound_s16((int)(q * full_scale));
     out_block.s16[out_block_pos++] = i8;
     out_block.s16[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int16_t);
@@ -176,9 +173,8 @@ static void signal_out_cs16(double i, double q)
 
 static void signal_out_cs32(double i, double q)
 {
-    double scale = 2147483647.5; // scale to s32
-    int32_t i8 = bound_s32(i * scale);
-    int32_t q8 = bound_s32(q * scale);
+    int32_t i8 = bound_s32(i * full_scale);
+    int32_t q8 = bound_s32(q * full_scale);
     out_block.s32[out_block_pos++] = i8;
     out_block.s32[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int32_t);
@@ -190,9 +186,8 @@ static void signal_out_cs32(double i, double q)
 
 static void signal_out_cs64(double i, double q)
 {
-    double scale = 9223372036854775999.5; // scale to s64
-    int64_t i8 = bound_s64(i * scale);
-    int64_t q8 = bound_s64(q * scale);
+    int64_t i8 = bound_s64(i * full_scale);
+    int64_t q8 = bound_s64(q * full_scale);
     out_block.s64[out_block_pos++] = i8;
     out_block.s64[out_block_pos++] = q8;
     out_block_len += 2 * sizeof(int64_t);
@@ -204,8 +199,8 @@ static void signal_out_cs64(double i, double q)
 
 static void signal_out_cf32(double i, double q)
 {
-    out_block.f32[out_block_pos++] = (float)i;
-    out_block.f32[out_block_pos++] = (float)q;
+    out_block.f32[out_block_pos++] = (float)(i * full_scale);
+    out_block.f32[out_block_pos++] = (float)(q * full_scale);
     out_block_len += 2 * sizeof(float);
     if (out_block_len >= frame_size) {
         write(fd, out_block.u8, frame_size);
@@ -215,8 +210,8 @@ static void signal_out_cf32(double i, double q)
 
 static void signal_out_cf64(double i, double q)
 {
-    out_block.f64[out_block_pos++] = (double)i;
-    out_block.f64[out_block_pos++] = (double)q;
+    out_block.f64[out_block_pos++] = (double)(i * full_scale);
+    out_block.f64[out_block_pos++] = (double)(q * full_scale);
     out_block_len += 2 * sizeof(double);
     if (out_block_len >= frame_size) {
         write(fd, out_block.u8, frame_size);
@@ -232,6 +227,7 @@ static void signal_out_flush()
 
 static signal_out_fn signal_out;
 static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_cs8, signal_out_cs12, signal_out_cs16, signal_out_cs32, signal_out_cs64, signal_out_cf32, signal_out_cf64};
+static double scale_defaults[]    = {127.5, 127.5, 127.5, 2047.5, 32767.5, 2147483647.5, 9223372036854775999.5, 1.0, 1.0};
 
 static void add_noise(size_t time_us, int db)
 {
@@ -346,8 +342,20 @@ static void iq_render_init(iq_render_t *spec)
 {
     if (spec->sample_rate == 0.0)
         spec->sample_rate = DEFAULT_SAMPLE_RATE;
+
     if (spec->frame_size == 0)
         spec->frame_size = DEFAULT_BUF_LENGTH;
+
+    if (spec->sample_format < FORMAT_CU8 || spec->sample_format > FORMAT_CF64) {
+        fprintf(stderr, "Bad sample format (%d).\n",
+                spec->sample_format);
+        exit(1);
+    }
+
+    if (spec->full_scale == 0.0)
+        spec->full_scale = scale_defaults[spec->sample_format];
+    // fprintf(stderr, "Full scale is %.1f.\n", spec->full_scale);
+
     size_t unit = sample_format_length(spec->sample_format);
     if (spec->frame_size % unit != 0) {
         fprintf(stderr, "Adjusting frame size from %zu to %zu bytes.\n",
@@ -360,6 +368,7 @@ static void iq_render_init(iq_render_t *spec)
     noise_signal  = noise_pp_level(spec->noise_signal);
     gain          = sine_pk_level(spec->gain);
     sample_format = spec->sample_format;
+    full_scale    = spec->full_scale;
     frame_size    = spec->frame_size;
     signal_out    = format_out[sample_format];
 
