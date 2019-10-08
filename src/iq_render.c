@@ -135,6 +135,20 @@ static int64_t bound_s64(double x)
 
 // inlines
 
+static void signal_out_flush(ctx_t *ctx)
+{
+    write(ctx->fd, ctx->frame.u8, ctx->frame_len);
+    ctx->frame_pos = ctx->frame_len = 0;
+}
+
+static void signal_out_maybe_flush(ctx_t *ctx)
+{
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
+    }
+}
+
 static void signal_out_cu8(ctx_t *ctx, double i, double q)
 {
     uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * ctx->full_scale));
@@ -142,10 +156,6 @@ static void signal_out_cu8(ctx_t *ctx, double i, double q)
     ctx->frame.u8[ctx->frame_pos++] = i8;
     ctx->frame.u8[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(uint8_t);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cs8(ctx_t *ctx, double i, double q)
@@ -155,10 +165,6 @@ static void signal_out_cs8(ctx_t *ctx, double i, double q)
     ctx->frame.s8[ctx->frame_pos++] = i8;
     ctx->frame.s8[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int8_t);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cs12(ctx_t *ctx, double i, double q)
@@ -172,10 +178,6 @@ static void signal_out_cs12(ctx_t *ctx, double i, double q)
     ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(q8 >> 4);
     ctx->frame_len += 3 * sizeof(uint8_t);
     // NOTE: frame_size needs to be a multiple of 3!
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cs16(ctx_t *ctx, double i, double q)
@@ -185,10 +187,6 @@ static void signal_out_cs16(ctx_t *ctx, double i, double q)
     ctx->frame.s16[ctx->frame_pos++] = i8;
     ctx->frame.s16[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int16_t);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cs32(ctx_t *ctx, double i, double q)
@@ -198,10 +196,6 @@ static void signal_out_cs32(ctx_t *ctx, double i, double q)
     ctx->frame.s32[ctx->frame_pos++] = i8;
     ctx->frame.s32[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int32_t);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cs64(ctx_t *ctx, double i, double q)
@@ -211,10 +205,6 @@ static void signal_out_cs64(ctx_t *ctx, double i, double q)
     ctx->frame.s64[ctx->frame_pos++] = i8;
     ctx->frame.s64[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int64_t);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cf32(ctx_t *ctx, double i, double q)
@@ -222,10 +212,6 @@ static void signal_out_cf32(ctx_t *ctx, double i, double q)
     ctx->frame.f32[ctx->frame_pos++] = (float)(i * ctx->full_scale);
     ctx->frame.f32[ctx->frame_pos++] = (float)(q * ctx->full_scale);
     ctx->frame_len += 2 * sizeof(float);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
 }
 
 static void signal_out_cf64(ctx_t *ctx, double i, double q)
@@ -233,16 +219,6 @@ static void signal_out_cf64(ctx_t *ctx, double i, double q)
     ctx->frame.f64[ctx->frame_pos++] = (double)(i * ctx->full_scale);
     ctx->frame.f64[ctx->frame_pos++] = (double)(q * ctx->full_scale);
     ctx->frame_len += 2 * sizeof(double);
-    if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
-    }
-}
-
-static void signal_out_flush(ctx_t *ctx)
-{
-    write(ctx->fd, ctx->frame.u8, ctx->frame_len);
-    ctx->frame_pos = ctx->frame_len = 0;
 }
 
 static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_cs8, signal_out_cs12, signal_out_cs16, signal_out_cs32, signal_out_cs64, signal_out_cf32, signal_out_cf64};
@@ -257,6 +233,7 @@ static void add_noise(ctx_t *ctx, size_t time_us, int db)
         double x = (randf() - 0.5) * ctx->noise_floor;
         double y = (randf() - 0.5) * ctx->noise_floor;
         ctx->signal_out(ctx, x, y);
+        signal_out_maybe_flush(ctx);
     }
 }
 
@@ -312,6 +289,7 @@ static void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, int ph)
         y += (randf() - 0.5) * ctx->noise_signal;
 
         ctx->signal_out(ctx, x, y);
+        signal_out_maybe_flush(ctx);
     }
 }
 

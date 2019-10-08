@@ -169,8 +169,8 @@ int main(int argc, char **argv)
             break;
         case 'F':
             tx.input_format = tx_parse_sample_format(optarg);
-            if (!tx.input_format) {
-                fprintf(stderr, "Unsupported output format: %s\n", optarg);
+            if (!tx_valid_input_format(tx.input_format)) {
+                fprintf(stderr, "Unsupported input format: %s\n", optarg);
                 exit(1);
             }
             break;
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     if (!tx.input_format) {
         tx.input_format = tx_parse_sample_format(ext);
     }
-    if (!tx.input_format) {
+    if (!tx_valid_input_format(tx.input_format)) {
         fprintf(stderr, "Unknown input format \"%s\", falling back to CU8.\n", ext);
         tx.input_format = tx_parse_sample_format("CU8");
     }

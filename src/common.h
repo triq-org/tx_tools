@@ -60,6 +60,8 @@ size_t sample_format_length(enum sample_format format);
 
 char const *sample_format_str(enum sample_format format);
 
+enum sample_format sample_format_for(char const *format);
+
 enum sample_format file_info(char **path);
 
 // helper to get file contents

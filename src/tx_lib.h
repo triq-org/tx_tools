@@ -91,6 +91,12 @@ typedef struct tx_cmd {
     frame_t conv_buf;
 } tx_cmd_t;
 
+/// Is the format string a valid input format?
+int tx_valid_input_format(char const *format);
+
+/// Is the format string a valid output format?
+int tx_valid_output_format(char const *format);
+
 /// Parse SoapySDR format string.
 char const *tx_parse_sample_format(char const *format);
 

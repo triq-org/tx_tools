@@ -29,6 +29,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+// format is 3-4 chars (plus null), compare as int.
+static int is_format_equal(const void *a, const void *b)
+{
+    return *(const uint32_t *)a == *(const uint32_t *)b;
+}
+
 // format helper
 
 size_t sample_format_length(enum sample_format format)
@@ -79,6 +85,29 @@ char const *sample_format_str(enum sample_format format)
         return "CF64";
     }
     return "unknown";
+}
+
+enum sample_format sample_format_for(char const *format)
+{
+    if (!format || !*format)
+        return FORMAT_NONE;
+    else if (is_format_equal(format, "CU8"))
+        return FORMAT_CU8;
+    else if (is_format_equal(format, "CS8"))
+        return FORMAT_CS8;
+    else if (is_format_equal(format, "CS12"))
+        return  FORMAT_CS12;
+    else if (is_format_equal(format, "CS16"))
+        return  FORMAT_CS16;
+    else if (is_format_equal(format, "CS32"))
+        return  FORMAT_CS32;
+    else if (is_format_equal(format, "CS64"))
+        return  FORMAT_CS64;
+    else if (is_format_equal(format, "CF32"))
+        return  FORMAT_CF32;
+    else if (is_format_equal(format, "CF64"))
+        return  FORMAT_CF64;
+    return FORMAT_NONE;
 }
 
 enum sample_format file_info(char **path)
