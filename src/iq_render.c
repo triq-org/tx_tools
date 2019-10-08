@@ -64,9 +64,9 @@ struct ctx {
     double full_scale;
     size_t frame_size;
 
-    size_t out_block_len;
-    size_t out_block_pos;
-    frame_t out_block;
+    size_t frame_len;
+    size_t frame_pos;
+    frame_t frame;
     int fd;
 
     signal_out_fn signal_out;
@@ -139,12 +139,12 @@ static void signal_out_cu8(ctx_t *ctx, double i, double q)
 {
     uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * ctx->full_scale));
     uint8_t q8 = (uint8_t)bound_u8((int)((q + 1.0) * ctx->full_scale));
-    ctx->out_block.u8[ctx->out_block_pos++] = i8;
-    ctx->out_block.u8[ctx->out_block_pos++] = q8;
-    ctx->out_block_len += 2 * sizeof(uint8_t);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.u8[ctx->frame_pos++] = i8;
+    ctx->frame.u8[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(uint8_t);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
@@ -152,12 +152,12 @@ static void signal_out_cs8(ctx_t *ctx, double i, double q)
 {
     int8_t i8 = (int8_t)bound_s8((int)(i * ctx->full_scale));
     int8_t q8 = (int8_t)bound_s8((int)(q * ctx->full_scale));
-    ctx->out_block.s8[ctx->out_block_pos++] = i8;
-    ctx->out_block.s8[ctx->out_block_pos++] = q8;
-    ctx->out_block_len += 2 * sizeof(int8_t);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.s8[ctx->frame_pos++] = i8;
+    ctx->frame.s8[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(int8_t);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
@@ -167,14 +167,14 @@ static void signal_out_cs12(ctx_t *ctx, double i, double q)
     int16_t q8 = (int16_t)bound_s16((int)(q * ctx->full_scale));
     // produce 24 bit (iiqIQQ), note the input is LSB aligned, scale=2048
     // note: byte0 = i[7:0]; byte1 = {q[3:0], i[11:8]}; byte2 = q[11:4];
-    ctx->out_block.u8[ctx->out_block_pos++] = (uint8_t)(i8);
-    ctx->out_block.u8[ctx->out_block_pos++] = (uint8_t)((q8 << 4) | ((i8 >> 8) & 0x0f));
-    ctx->out_block.u8[ctx->out_block_pos++] = (uint8_t)(q8 >> 4);
-    ctx->out_block_len += 3 * sizeof(uint8_t);
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8);
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)((q8 << 4) | ((i8 >> 8) & 0x0f));
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(q8 >> 4);
+    ctx->frame_len += 3 * sizeof(uint8_t);
     // NOTE: frame_size needs to be a multiple of 3!
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
@@ -182,12 +182,12 @@ static void signal_out_cs16(ctx_t *ctx, double i, double q)
 {
     int16_t i8 = (int16_t)bound_s16((int)(i * ctx->full_scale));
     int16_t q8 = (int16_t)bound_s16((int)(q * ctx->full_scale));
-    ctx->out_block.s16[ctx->out_block_pos++] = i8;
-    ctx->out_block.s16[ctx->out_block_pos++] = q8;
-    ctx->out_block_len += 2 * sizeof(int16_t);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.s16[ctx->frame_pos++] = i8;
+    ctx->frame.s16[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(int16_t);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
@@ -195,12 +195,12 @@ static void signal_out_cs32(ctx_t *ctx, double i, double q)
 {
     int32_t i8 = bound_s32(i * ctx->full_scale);
     int32_t q8 = bound_s32(q * ctx->full_scale);
-    ctx->out_block.s32[ctx->out_block_pos++] = i8;
-    ctx->out_block.s32[ctx->out_block_pos++] = q8;
-    ctx->out_block_len += 2 * sizeof(int32_t);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.s32[ctx->frame_pos++] = i8;
+    ctx->frame.s32[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(int32_t);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
@@ -208,41 +208,41 @@ static void signal_out_cs64(ctx_t *ctx, double i, double q)
 {
     int64_t i8 = bound_s64(i * ctx->full_scale);
     int64_t q8 = bound_s64(q * ctx->full_scale);
-    ctx->out_block.s64[ctx->out_block_pos++] = i8;
-    ctx->out_block.s64[ctx->out_block_pos++] = q8;
-    ctx->out_block_len += 2 * sizeof(int64_t);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.s64[ctx->frame_pos++] = i8;
+    ctx->frame.s64[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(int64_t);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
 static void signal_out_cf32(ctx_t *ctx, double i, double q)
 {
-    ctx->out_block.f32[ctx->out_block_pos++] = (float)(i * ctx->full_scale);
-    ctx->out_block.f32[ctx->out_block_pos++] = (float)(q * ctx->full_scale);
-    ctx->out_block_len += 2 * sizeof(float);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.f32[ctx->frame_pos++] = (float)(i * ctx->full_scale);
+    ctx->frame.f32[ctx->frame_pos++] = (float)(q * ctx->full_scale);
+    ctx->frame_len += 2 * sizeof(float);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
 static void signal_out_cf64(ctx_t *ctx, double i, double q)
 {
-    ctx->out_block.f64[ctx->out_block_pos++] = (double)(i * ctx->full_scale);
-    ctx->out_block.f64[ctx->out_block_pos++] = (double)(q * ctx->full_scale);
-    ctx->out_block_len += 2 * sizeof(double);
-    if (ctx->out_block_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->out_block.u8, ctx->frame_size);
-        ctx->out_block_pos = ctx->out_block_len = 0;
+    ctx->frame.f64[ctx->frame_pos++] = (double)(i * ctx->full_scale);
+    ctx->frame.f64[ctx->frame_pos++] = (double)(q * ctx->full_scale);
+    ctx->frame_len += 2 * sizeof(double);
+    if (ctx->frame_len >= ctx->frame_size) {
+        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
+        ctx->frame_pos = ctx->frame_len = 0;
     }
 }
 
 static void signal_out_flush(ctx_t *ctx)
 {
-    write(ctx->fd, ctx->out_block.u8, ctx->out_block_len);
-    ctx->out_block_pos = ctx->out_block_len = 0;
+    write(ctx->fd, ctx->frame.u8, ctx->frame_len);
+    ctx->frame_pos = ctx->frame_len = 0;
 }
 
 static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_cs8, signal_out_cs12, signal_out_cs16, signal_out_cs32, signal_out_cs64, signal_out_cf32, signal_out_cf64};
@@ -426,8 +426,8 @@ int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
     else
         ctx.fd = open(outpath, O_CREAT | O_TRUNC | O_WRONLY, 0644);
 
-    ctx.out_block.u8 = malloc(ctx.frame_size);
-    if (!ctx.out_block.u8) {
+    ctx.frame.u8 = malloc(ctx.frame_size);
+    if (!ctx.frame.u8) {
         fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", ctx.frame_size);
         exit(1);
     }
@@ -441,7 +441,7 @@ int iq_render_file(char *outpath, iq_render_t *spec, tone_t *tones)
     double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC;
     printf("Time elapsed %g ms, signal lenght %g ms, speed %gx\n", elapsed, signal_length_us / 1000.0, signal_length_us / 1000.0 / elapsed);
 
-    free(ctx.out_block.u8);
+    free(ctx.frame.u8);
     if (ctx.fd != fileno(stdout))
         close(ctx.fd);
 
@@ -458,8 +458,8 @@ int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_
     size_t smp = iq_render_length_smp(spec, tones);
     ctx.frame_size = smp * sample_format_length(ctx.sample_format);
 
-    ctx.out_block.u8 = malloc(ctx.frame_size);
-    if (!ctx.out_block.u8) {
+    ctx.frame.u8 = malloc(ctx.frame_size);
+    if (!ctx.frame.u8) {
         fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", ctx.frame_size);
         exit(1);
     }
@@ -475,7 +475,7 @@ int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_
     printf("Time elapsed %g ms, signal lenght %g ms, speed %gx\n", elapsed, signal_length_us / 1000.0, signal_length_us / 1000.0 / elapsed);
 
     if (out_buf)
-        *out_buf = ctx.out_block.u8;
+        *out_buf = ctx.frame.u8;
     if (out_len)
         *out_len = ctx.frame_size - 1;
     return 0;
