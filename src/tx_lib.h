@@ -26,9 +26,16 @@
 
 #include "common.h"
 
+typedef struct dev_info {
+    char *driver_key;
+    char *hardware_key;
+    char *hardware_info;
+} dev_info_t;
+
 typedef struct tx_ctx {
     size_t devs_len;
     void *devs;
+    dev_info_t *dev_infos;
 } tx_ctx_t;
 
 typedef enum stream_format {

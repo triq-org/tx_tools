@@ -117,6 +117,8 @@ void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args)
     SoapySDRDevice **devs = SoapySDRDevice_make_each(devs_kwargs, devs_len);
     SoapySDRKwargsList_clear(devs_kwargs, devs_len);
 
+    dev_info_t *dev_infos = calloc(devs_len, sizeof(dev_info_t));
+
     fprintf(stderr, "SoapySDRDevice_getDriverKey()...\n");
     for (size_t i = 0; i < devs_len; ++i) {
         if (!devs[i])
@@ -126,17 +128,25 @@ void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args)
         SoapySDRKwargs info = SoapySDRDevice_getHardwareInfo(devs[i]);
         char *p             = SoapySDRKwargs_toString(&info);
         fprintf(stderr, "%u : %s : %s : %s\n", (unsigned)i, d_key, h_key, p);
-        free(d_key);
-        free(h_key);
-        free(p);
+        dev_infos[i].driver_key    = d_key;
+        dev_infos[i].hardware_key  = h_key;
+        dev_infos[i].hardware_info = p;
     }
 
     tx_ctx->devs_len = devs_len;
     tx_ctx->devs = devs;
+    tx_ctx->dev_infos = dev_infos;
 }
 
 void tx_free_devices(tx_ctx_t *tx_ctx)
 {
+    for (size_t i = 0; i < tx_ctx->devs_len; ++i) {
+        free(tx_ctx->dev_infos[i].driver_key);
+        free(tx_ctx->dev_infos[i].hardware_key);
+        free(tx_ctx->dev_infos[i].hardware_info);
+    }
+    free(tx_ctx->dev_infos);
+
     fprintf(stderr, "SoapySDRDevice_unmake_each()...\n");
     SoapySDRDevice **devs = (SoapySDRDevice **)tx_ctx->devs;
     SoapySDRDevice_unmake_each(devs, tx_ctx->devs_len);
