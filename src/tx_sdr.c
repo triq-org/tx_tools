@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - tx_sdr, play data through SoapySDR TX
+    tx_tools - tx_sdr, play data through SoapySDR TX.
 
     Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
 

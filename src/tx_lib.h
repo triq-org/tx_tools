@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - tx_lib, common TX functions
+    tx_tools - tx_lib, common TX functions.
 
     Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 

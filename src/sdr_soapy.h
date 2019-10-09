@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONVENIENCE_H
-#define CONVENIENCE_H
+#ifndef INCLUDE_SDR_SOAPY_H_
+#define INCLUDE_SDR_SOAPY_H_
 
 #ifdef _MSC_VER
 char * strsep(char **sp, char *sep);
@@ -108,4 +108,4 @@ int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const 
  */
 void parse_kwargs(char const *s, SoapySDRKwargs *args);
 
-#endif /*CONVENIENCE_H*/
+#endif /* INCLUDE_SDR_SOAPY_H_ */

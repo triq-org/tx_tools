@@ -19,7 +19,7 @@
  * todo: use strtol/strtod for more flexible number parsing
  * */
 
-#include "convenience.h"
+#include "sdr_soapy.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

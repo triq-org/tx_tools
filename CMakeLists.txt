@@ -12,7 +12,6 @@ endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
 #local include directories first
-include_directories(${PROJECT_SOURCE_DIR}/src/convenience)
 include_directories(${PROJECT_SOURCE_DIR}/src/utils)
 
 #include local cmake modules
@@ -58,7 +57,7 @@ endif ()
 # Helper library
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-list(APPEND COMMON_SOURCES src/convenience/convenience.c src/tx_lib.c)
+list(APPEND COMMON_SOURCES src/sdr_soapy.c src/tx_lib.c)
 list(APPEND COMMON_SOURCES src/read_text.c src/tone_text.c src/code_text.c src/pulse_text.c src/iq_render.c src/sample.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
