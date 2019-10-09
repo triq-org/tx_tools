@@ -18,13 +18,12 @@
 */
 
 #include "pulse_text.h"
+#include "read_text.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
-#include "common.h"
 
 static void skip_ws(char const **buf)
 {

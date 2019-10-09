@@ -1,7 +1,7 @@
 /** @file
-    tx_tools - code_text, a simple waveform spec parser and printer.
+    tx_tools - tone_text, a simple tone spec parser and printer.
 
-    Copyright (C) 2018 by Christian Zuckschwerdt <zany@triq.net>
+    Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,26 +17,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_CODETEXT_H_
-#define INCLUDE_CODETEXT_H_
-
-#include "tone_text.h"
+#ifndef INCLUDE_TONETEXT_H_
+#define INCLUDE_TONETEXT_H_
 
 typedef struct {
-    int tones;
-    tone_t tone[1000]; // TODO: really should be dynamic
-} symbol_t;
+    int hz; ///< Tone frequency (Hz)
+    int db; ///< Tone attenuation (dB)
+    int ph; ///< Tone phase (deg offset)
+    int us; ///< Tone length (us)
+} tone_t;
 
-// parsing a code from string or reading in
+// parsing tone data from string or reading in
 
-symbol_t *parse_code(char const *code, symbol_t *symbols);
+tone_t *parse_tones(char const *tones);
 
-symbol_t *parse_code_file(char const *filename, symbol_t *symbols);
-
-void free_symbols(symbol_t *symbols);
+tone_t *parse_tones_file(char const *filename);
 
 // debug output to stdout
 
-void output_symbol(symbol_t const *s);
+void output_tone(tone_t const *t);
 
-#endif /* INCLUDE_CODETEXT_H_ */
+void output_tones(tone_t const *tones);
+
+#endif /* INCLUDE_TONETEXT_H_ */

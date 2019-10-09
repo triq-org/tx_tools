@@ -20,8 +20,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "read_text.h"
 #include "code_text.h"
-#include "common.h"
 
 int main(int argc, char **argv)
 {

@@ -1,7 +1,7 @@
 /** @file
-    tx_tools - code_text, a simple waveform spec parser and printer.
+    tx_tools - read_text, read text files.
 
-    Copyright (C) 2018 by Christian Zuckschwerdt <zany@triq.net>
+    Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,26 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_CODETEXT_H_
-#define INCLUDE_CODETEXT_H_
+#ifndef INCLUDE_READTEXT_H_
+#define INCLUDE_READTEXT_H_
 
-#include "tone_text.h"
+#define READ_CHUNK_SIZE 8192
 
-typedef struct {
-    int tones;
-    tone_t tone[1000]; // TODO: really should be dynamic
-} symbol_t;
+// helper to get file contents
 
-// parsing a code from string or reading in
+char const *read_text_fd(int fd, char const *file_hint);
 
-symbol_t *parse_code(char const *code, symbol_t *symbols);
+char const *read_text_file(char const *filename);
 
-symbol_t *parse_code_file(char const *filename, symbol_t *symbols);
-
-void free_symbols(symbol_t *symbols);
-
-// debug output to stdout
-
-void output_symbol(symbol_t const *s);
-
-#endif /* INCLUDE_CODETEXT_H_ */
+#endif /* INCLUDE_READTEXT_H_ */

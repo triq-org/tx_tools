@@ -20,7 +20,8 @@
 #ifndef INCLUDE_PULSETEXT_H_
 #define INCLUDE_PULSETEXT_H_
 
-#include "common.h" /* to get tone_t */
+#include "tone_text.h"
+#include "read_text.h"
 
 typedef struct pulse_setup {
     unsigned time_base; ///< 1/unit of width, usually 1000000 for us.

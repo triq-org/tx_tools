@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "read_text.h"
 #include "pulse_text.h"
 #include "iq_render.h"
 #include "common.h"

@@ -23,8 +23,6 @@
 #include <stdint.h>
 #include <stddef.h> /* size_t */
 
-#define READ_CHUNK_SIZE 8192
-
 typedef union frame {
     uint8_t *u8;
     int8_t *s8;
@@ -47,13 +45,6 @@ enum sample_format {
     FORMAT_CF64,
 };
 
-typedef struct {
-    int hz; ///< Tone frequency (Hz)
-    int db; ///< Tone attenuation (dB)
-    int ph; ///< Tone phase (deg offset)
-    int us; ///< Tone length (us)
-} tone_t;
-
 // helper for sample formats
 
 size_t sample_format_length(enum sample_format format);
@@ -63,11 +54,5 @@ char const *sample_format_str(enum sample_format format);
 enum sample_format sample_format_for(char const *format);
 
 enum sample_format file_info(char **path);
-
-// helper to get file contents
-
-char const *read_text_fd(int fd, char const *file_hint);
-
-char const *read_text_file(char const *filename);
 
 #endif /* INCLUDE_COMMON_H_ */

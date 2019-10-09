@@ -183,33 +183,3 @@ enum sample_format file_info(char **path)
 
     return FORMAT_NONE;
 }
-
-
-// file helper
-
-char const *read_text_fd(int fd, char const *file_hint)
-{
-    char *text = NULL;
-
-    size_t n_offs = 0;
-    ssize_t n_read = 1; // just to get us started
-    while (n_read) {
-        text = realloc((void *)text, n_offs + READ_CHUNK_SIZE);
-        n_read = read(fd, (void *)&text[n_offs], READ_CHUNK_SIZE);
-        if (n_read < 0) {
-            fprintf(stderr, "Error %d reading \"%s\".\n", (int)n_read, file_hint);
-            exit((int)n_read);
-        }
-        n_offs += (size_t)n_read;
-    }
-
-    return text;
-}
-
-char const *read_text_file(char const *filename)
-{
-    int fd = open(filename, O_RDONLY);
-    char const *text = read_text_fd(fd, filename);
-    close(fd);
-    return text;
-}
