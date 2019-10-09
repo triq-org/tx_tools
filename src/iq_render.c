@@ -50,6 +50,8 @@ int abort_render = 0;
 
 // render context
 
+#define MAX_FILTER_SIZE 1000
+
 typedef struct ctx ctx_t;
 
 typedef void (*signal_out_fn)(ctx_t *ctx, double i, double q);
@@ -75,8 +77,8 @@ struct ctx {
     double g_hz;  ///< continuous freq
     uint32_t phi; ///< continuous phase
 
-    double filter_out[100];
-    double filter_in[100];
+    double filter_out[MAX_FILTER_SIZE];
+    double filter_in[MAX_FILTER_SIZE];
     size_t filter_len;
 };
 
@@ -240,9 +242,12 @@ static void add_noise(ctx_t *ctx, size_t time_us, int db)
 static void init_filter(ctx_t *ctx, size_t time_us)
 {
     ctx->filter_len = (size_t)(time_us * ctx->sample_rate / 1000000.0);
+    if (ctx->filter_len > MAX_FILTER_SIZE)
+        ctx->filter_len = MAX_FILTER_SIZE;
     //uint32_t l_phi = 0;
     //uint32_t d_phi = nco_d_phase(1000000 / 2 / time_us, (size_t)ctx->sample_rate);
     for (size_t t = 0; t < ctx->filter_len; ++t) {
+        // naive linear filter
         ctx->filter_out[t] = (ctx->filter_len - t) / (double)ctx->filter_len;
         ctx->filter_in[t]  = t / (double)ctx->filter_len;
 
@@ -328,6 +333,7 @@ void iq_render_defaults(iq_render_t *spec)
     spec->noise_floor  = -19;
     spec->noise_signal = -25;
     spec->gain         = -3;
+    spec->filter_width = 50;
     spec->frame_size   = DEFAULT_BUF_LENGTH;
 }
 
@@ -371,7 +377,7 @@ static void iq_render_init(ctx_t *ctx, iq_render_t *spec)
 
     init_db_lut();
     nco_init();
-    init_filter(ctx, 50);
+    init_filter(ctx, spec->filter_width);
 }
 
 static size_t iq_render(ctx_t *ctx, tone_t *tones)
