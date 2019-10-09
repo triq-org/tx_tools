@@ -20,9 +20,9 @@
 #ifndef INCLUDE_IQRENDER_H_
 #define INCLUDE_IQRENDER_H_
 
-#include <stddef.h> /* size_t */
-#include "tone_text.h"
-#include "common.h" /* to get tone_t, sample_format_t */
+#include <stddef.h>    /* size_t */
+#include "tone_text.h" /* tone_t */
+#include "sample.h"    /* sample_format_t */
 
 #define DEFAULT_SAMPLE_RATE 1000000
 #define DEFAULT_BUF_LENGTH (1 * 16384)

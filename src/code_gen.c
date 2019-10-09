@@ -20,7 +20,7 @@
 #include "read_text.h"
 #include "code_text.h"
 #include "iq_render.h"
-#include "common.h"
+#include "sample.h"
 
 #include <errno.h>
 #include <signal.h>

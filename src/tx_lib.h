@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "common.h"
+#include "sample.h"
 
 typedef struct dev_info {
     char *dev_kwargs;

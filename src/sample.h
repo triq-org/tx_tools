@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - common, common types and helpers.
+    tx_tools - sample, sample format types and helpers.
 
     Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_COMMON_H_
-#define INCLUDE_COMMON_H_
+#ifndef INCLUDE_SAMPLE_H_
+#define INCLUDE_SAMPLE_H_
 
 #include <stdint.h>
 #include <stddef.h> /* size_t */
@@ -55,4 +55,4 @@ enum sample_format sample_format_for(char const *format);
 
 enum sample_format file_info(char **path);
 
-#endif /* INCLUDE_COMMON_H_ */
+#endif /* INCLUDE_SAMPLE_H_ */
