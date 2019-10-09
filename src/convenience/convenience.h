@@ -18,18 +18,10 @@
 #define CONVENIENCE_H
 
 #ifdef _MSC_VER
-#define bool _Bool
-#define false 0
-#define true 1
-#define strcasecmp _stricmp
 char * strsep(char **sp, char *sep);
-#include <time.h>
-struct tm *localtime_r (const time_t *timer, struct tm *result);
 #endif
 
-#include <stdint.h>
 #include <SoapySDR/Device.h>
-
 
 /* a collection of user friendly tools */
 

@@ -39,17 +39,6 @@ typedef struct tx_ctx {
     dev_info_t *dev_infos;
 } tx_ctx_t;
 
-typedef enum stream_format {
-    CU8  = 0x43553800,
-    CS8  = 0x43533800,
-    CS12 = 0x43533132,
-    CS16 = 0x43533136,
-    CS32 = 0x43533332,
-    CS64 = 0x43533634,
-    CF32 = 0x43463332,
-    CF64 = 0x43463634,
-} stream_format_t;
-
 typedef struct tx_cmd {
     // device selection
     char const *dev_query;

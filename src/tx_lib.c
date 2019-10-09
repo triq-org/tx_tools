@@ -58,44 +58,13 @@ int tx_valid_output_format(char const *format)
 
 char const *tx_parse_sample_format(char const *format)
 {
-    if (strcasecmp(optarg, "CU8") == 0)
-        return "CU8";
-    else if (strcasecmp(optarg, "CS8") == 0)
-        return "CS8";
-    else if (strcasecmp(optarg, "CS12") == 0)
-        return "CS12";
-    else if (strcasecmp(optarg, "CS16") == 0)
-        return "CS16";
-    else if (strcasecmp(optarg, "CS32") == 0)
-        return "CS32";
-    else if (strcasecmp(optarg, "CF32") == 0)
-        return "CF32";
-    else if (strcasecmp(optarg, "CF64") == 0)
-        return "CF64";
-    else
-        return NULL;
+    return sample_format_str(sample_format_parse(format));
 }
 
 // format is 3-4 chars (plus null), compare as int.
 static int is_format_equal(const void *a, const void *b)
 {
     return *(const uint32_t *)a == *(const uint32_t *)b;
-}
-
-static int check_format(stream_format_t format)
-{
-    if (format == CU8
-            || format == CS8
-            || format == CS12
-            || format == CS16
-            || format == CS32
-            || format == CF32
-            || format == CF64) {
-        return 0;
-    }
-    // unknown format
-    fprintf(stderr, "Unknown format \"%.*s\".\n", 4, (char const *)&format);
-    return -1;
 }
 
 // api

@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -40,13 +39,6 @@
 #include <SoapySDR/Formats.h>
 
 #ifdef _MSC_VER
-struct tm *localtime_r (const time_t *timer, struct tm *result)
-{
-    struct tm *local_result = localtime (timer);
-    if (local_result == NULL || result == NULL) return NULL;
-    memcpy (result, local_result, sizeof (struct tm));
-    return result;
-}
 
 //http://unixpapa.com/incnote/string.html
 char * strsep(char **sp, char *sep)
