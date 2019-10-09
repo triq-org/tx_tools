@@ -27,6 +27,7 @@
 #include "common.h"
 
 typedef struct dev_info {
+    char *dev_kwargs;
     char *driver_key;
     char *hardware_key;
     char *hardware_info;
