@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "code_parse.h"
+#include "code_text.h"
 
 int main(int argc, char **argv)
 {

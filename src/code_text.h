@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - code_parse, a simple waveform spec parser.
+    tx_tools - code_text, a simple waveform spec parser and printer.
 
     Copyright (C) 2018 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_CODEPARSE_H_
-#define INCLUDE_CODEPARSE_H_
+#ifndef INCLUDE_CODETEXT_H_
+#define INCLUDE_CODETEXT_H_
 
 #include "common.h" /* to get tone_t */
 
@@ -41,4 +41,4 @@ void output_tone(tone_t const *t);
 
 void output_symbol(symbol_t const *s);
 
-#endif /* INCLUDE_CODEPARSE_H_ */
+#endif /* INCLUDE_CODETEXT_H_ */

@@ -59,7 +59,7 @@ endif ()
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 list(APPEND COMMON_SOURCES src/convenience/convenience.c src/tx_lib.c)
-list(APPEND COMMON_SOURCES src/code_parse.c src/pulse_parse.c src/iq_render.c src/common.c)
+list(APPEND COMMON_SOURCES src/code_text.c src/pulse_text.c src/iq_render.c src/common.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
@@ -110,19 +110,19 @@ endif()
 add_executable(tx_sdr src/tx_sdr.c)
 target_link_libraries(tx_sdr ${TX_TOOLS_LIBS})
 
-add_executable(pulse_gen src/pulse_gen.c src/pulse_parse.c src/transform.c src/utils/optparse.c src/iq_render.c src/common.c)
+add_executable(pulse_gen src/pulse_gen.c src/pulse_text.c src/transform.c src/utils/optparse.c src/iq_render.c src/common.c)
 if(UNIX)
 target_link_libraries(pulse_gen m)
 endif()
 
-add_executable(code_gen src/code_gen.c src/code_parse.c src/transform.c src/utils/optparse.c src/iq_render.c src/common.c)
+add_executable(code_gen src/code_gen.c src/code_text.c src/transform.c src/utils/optparse.c src/iq_render.c src/common.c)
 if(UNIX)
 target_link_libraries(code_gen m)
 endif()
 
-add_executable(code_dump src/code_dump.c src/code_parse.c src/transform.c src/common.c)
+add_executable(code_dump src/code_dump.c src/code_text.c src/transform.c src/common.c)
 
-add_executable(example_gen src/example_gen.c src/code_parse.c src/transform.c src/common.c)
+add_executable(example_gen src/example_gen.c src/code_text.c src/transform.c src/common.c)
 
 add_executable(fast_osc_tests src/fast_osc_tests.c)
 if(UNIX)

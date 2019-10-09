@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "code_parse.h"
+#include "code_text.h"
 #include "iq_render.h"
 #include "common.h"
 

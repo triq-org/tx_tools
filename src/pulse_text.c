@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - pulse_parse, a simple pulse spec parser.
+    tx_tools - pulse_text, a simple pulse spec parser and printer.
 
     Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pulse_parse.h"
+#include "pulse_text.h"
 
 #include <stdlib.h>
 #include <stdio.h>

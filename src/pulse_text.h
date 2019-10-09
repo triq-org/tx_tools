@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - pulse_parse, a simple pulse spec parser.
+    tx_tools - pulse_text, a simple pulse spec parser and printer.
 
     Copyright (C) 2019 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_PULSEPARSE_H_
-#define INCLUDE_PULSEPARSE_H_
+#ifndef INCLUDE_PULSETEXT_H_
+#define INCLUDE_PULSETEXT_H_
 
 #include "common.h" /* to get tone_t */
 
@@ -46,4 +46,4 @@ tone_t *parse_pulses_file(char const *filename, pulse_setup_t *defaults);
 
 void output_pulses(tone_t const *tones);
 
-#endif /* INCLUDE_PULSEPARSE_H_ */
+#endif /* INCLUDE_PULSETEXT_H_ */

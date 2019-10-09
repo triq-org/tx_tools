@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - code_parse, a simple waveform spec parser.
+    tx_tools - code_text, a simple waveform spec parser and printer.
 
     Copyright (C) 2018 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "code_parse.h"
+#include "code_text.h"
 
 #include <stdlib.h>
 #include <stdio.h>

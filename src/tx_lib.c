@@ -19,8 +19,8 @@
 
 #include "tx_lib.h"
 
-#include "pulse_parse.h"
-#include "code_parse.h"
+#include "pulse_text.h"
+#include "code_text.h"
 #include "iq_render.h"
 
 #include <stdio.h>
