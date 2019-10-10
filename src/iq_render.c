@@ -105,6 +105,16 @@ static double randf(void)
     return (double)rand() / RAND_MAX;
 }
 
+static int bound_u4(int x)
+{
+    return x < 0 ? 0 : x > 0xf ? 0xf : x;
+}
+
+static int bound_s4(int x)
+{
+    return x < -0x8 ? -0x8 : x > 0x7 ? 0x7 : x;
+}
+
 static int bound_u8(int x)
 {
     return x < 0 ? 0 : x > 0xff ? 0xff : x;
@@ -125,9 +135,19 @@ static int bound_s16(int x)
     return x < -0x8000 ? -0x8000 : x > 0x7fff ? 0x7fff : x;
 }
 
+static uint32_t bound_u32(double x)
+{
+    return x < 0 ? 0 : x > 0xffffffff ? 0xffffffff : (uint32_t)x;
+}
+
 static int32_t bound_s32(double x)
 {
     return x < -0x7fffffff ? -0x7fffffff : x > 0x7fffffff ? 0x7fffffff : (int32_t)x;
+}
+
+static uint64_t bound_u64(double x)
+{
+    return x < 0 ? 0 : x > 0xffffffffffffffff ? 0xffffffffffffffff : (uint64_t)x;
 }
 
 static int64_t bound_s64(double x)
@@ -151,6 +171,22 @@ static void signal_out_maybe_flush(ctx_t *ctx)
     }
 }
 
+static void signal_out_cu4(ctx_t *ctx, double i, double q)
+{
+    uint8_t i8 = (uint8_t)bound_u4((int)((i + 1.0) * ctx->full_scale));
+    uint8_t q8 = (uint8_t)bound_u4((int)((q + 1.0) * ctx->full_scale));
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8 << 4) | (q8);
+    ctx->frame_len += 1 * sizeof(uint8_t);
+}
+
+static void signal_out_cs4(ctx_t *ctx, double i, double q)
+{
+    int8_t i8 = (int8_t)bound_s4((int)(i * ctx->full_scale));
+    int8_t q8 = (int8_t)bound_s4((int)(q * ctx->full_scale));
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8 << 4) | (q8 & 0xf);
+    ctx->frame_len += 1 * sizeof(uint8_t);
+}
+
 static void signal_out_cu8(ctx_t *ctx, double i, double q)
 {
     uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * ctx->full_scale));
@@ -169,6 +205,19 @@ static void signal_out_cs8(ctx_t *ctx, double i, double q)
     ctx->frame_len += 2 * sizeof(int8_t);
 }
 
+static void signal_out_cu12(ctx_t *ctx, double i, double q)
+{
+    uint16_t i8 = (uint16_t)bound_u16((int)((i + 1.0) * ctx->full_scale));
+    uint16_t q8 = (uint16_t)bound_u16((int)((q + 1.0) * ctx->full_scale));
+    // produce 24 bit (iiqIQQ), note the input is LSB aligned, scale=2048
+    // note: byte0 = i[7:0]; byte1 = {q[3:0], i[11:8]}; byte2 = q[11:4];
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8);
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)((q8 << 4) | ((i8 >> 8) & 0x0f));
+    ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(q8 >> 4);
+    ctx->frame_len += 3 * sizeof(uint8_t);
+    // NOTE: frame_size needs to be a multiple of 3!
+}
+
 static void signal_out_cs12(ctx_t *ctx, double i, double q)
 {
     int16_t i8 = (int16_t)bound_s16((int)(i * ctx->full_scale));
@@ -182,6 +231,15 @@ static void signal_out_cs12(ctx_t *ctx, double i, double q)
     // NOTE: frame_size needs to be a multiple of 3!
 }
 
+static void signal_out_cu16(ctx_t *ctx, double i, double q)
+{
+    uint16_t i8 = (uint16_t)bound_u16((int)((i + 1.0) * ctx->full_scale));
+    uint16_t q8 = (uint16_t)bound_u16((int)((q + 1.0) * ctx->full_scale));
+    ctx->frame.u16[ctx->frame_pos++] = i8;
+    ctx->frame.u16[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(uint16_t);
+}
+
 static void signal_out_cs16(ctx_t *ctx, double i, double q)
 {
     int16_t i8 = (int16_t)bound_s16((int)(i * ctx->full_scale));
@@ -191,6 +249,15 @@ static void signal_out_cs16(ctx_t *ctx, double i, double q)
     ctx->frame_len += 2 * sizeof(int16_t);
 }
 
+static void signal_out_cu32(ctx_t *ctx, double i, double q)
+{
+    uint32_t i8 = bound_u32((i + 1.0) * ctx->full_scale);
+    uint32_t q8 = bound_u32((q + 1.0) * ctx->full_scale);
+    ctx->frame.u32[ctx->frame_pos++] = i8;
+    ctx->frame.u32[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(uint32_t);
+}
+
 static void signal_out_cs32(ctx_t *ctx, double i, double q)
 {
     int32_t i8 = bound_s32(i * ctx->full_scale);
@@ -198,6 +265,15 @@ static void signal_out_cs32(ctx_t *ctx, double i, double q)
     ctx->frame.s32[ctx->frame_pos++] = i8;
     ctx->frame.s32[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int32_t);
+}
+
+static void signal_out_cu64(ctx_t *ctx, double i, double q)
+{
+    uint64_t i8 = bound_u64((i + 1.0) * ctx->full_scale);
+    uint64_t q8 = bound_u64((q + 1.0) * ctx->full_scale);
+    ctx->frame.u64[ctx->frame_pos++] = i8;
+    ctx->frame.u64[ctx->frame_pos++] = q8;
+    ctx->frame_len += 2 * sizeof(uint64_t);
 }
 
 static void signal_out_cs64(ctx_t *ctx, double i, double q)
@@ -223,8 +299,40 @@ static void signal_out_cf64(ctx_t *ctx, double i, double q)
     ctx->frame_len += 2 * sizeof(double);
 }
 
-static signal_out_fn format_out[] = {signal_out_cu8, signal_out_cu8, signal_out_cs8, signal_out_cs12, signal_out_cs16, signal_out_cs32, signal_out_cs64, signal_out_cf32, signal_out_cf64};
-static double scale_defaults[]    = {127.5, 127.5, 127.5, 2047.5, 32767.5, 2147483647.5, 9223372036854775999.5, 1.0, 1.0};
+static signal_out_fn format_out[] = {
+        signal_out_cu8,
+        signal_out_cu4,
+        signal_out_cs4,
+        signal_out_cu8,
+        signal_out_cs8,
+        signal_out_cu12,
+        signal_out_cs12,
+        signal_out_cu16,
+        signal_out_cs16,
+        signal_out_cu32,
+        signal_out_cs32,
+        signal_out_cu64,
+        signal_out_cs64,
+        signal_out_cf32,
+        signal_out_cf64,
+};
+static double scale_defaults[] = {
+        127.5,
+        7.5,
+        7.5,
+        127.5,
+        127.5,
+        2047.5,
+        2047.5,
+        32767.5,
+        32767.5,
+        2147483647.5,
+        2147483647.5,
+        9223372036854775999.5,
+        9223372036854775999.5,
+        1.0,
+        1.0,
+};
 
 // signal gen
 
@@ -345,7 +453,7 @@ static void iq_render_init(ctx_t *ctx, iq_render_t *spec)
     if (spec->frame_size == 0)
         spec->frame_size = DEFAULT_BUF_LENGTH;
 
-    if (spec->sample_format < FORMAT_CU8 || spec->sample_format > FORMAT_CF64) {
+    if (spec->sample_format < FORMAT_CU4 || spec->sample_format > FORMAT_CF64) {
         fprintf(stderr, "Bad sample format (%d).\n",
                 spec->sample_format);
         exit(1);

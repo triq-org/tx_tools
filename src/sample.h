@@ -26,8 +26,11 @@
 typedef union frame {
     uint8_t *u8;
     int8_t *s8;
+    uint16_t *u16;
     int16_t *s16;
+    uint32_t *u32;
     int32_t *s32;
+    uint64_t *u64;
     int64_t *s64;
     float *f32;
     double *f64;
@@ -35,11 +38,17 @@ typedef union frame {
 
 enum sample_format {
     FORMAT_NONE,
+    FORMAT_CU4,
+    FORMAT_CS4,
     FORMAT_CU8,
     FORMAT_CS8,
+    FORMAT_CU12,
     FORMAT_CS12,
+    FORMAT_CU16,
     FORMAT_CS16,
+    FORMAT_CU32,
     FORMAT_CS32,
+    FORMAT_CU64,
     FORMAT_CS64,
     FORMAT_CF32,
     FORMAT_CF64,

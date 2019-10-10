@@ -50,16 +50,28 @@ size_t sample_format_length(enum sample_format format)
     switch (format) {
     case FORMAT_NONE:
         return 2 * sizeof(uint8_t);
+    case FORMAT_CU4:
+        return 1 * sizeof(uint8_t);
+    case FORMAT_CS4:
+        return 1 * sizeof(int8_t);
     case FORMAT_CU8:
         return 2 * sizeof(uint8_t);
     case FORMAT_CS8:
         return 2 * sizeof(int8_t);
+    case FORMAT_CU12:
+        return 3 * sizeof(uint8_t);
     case FORMAT_CS12:
         return 3 * sizeof(uint8_t);
+    case FORMAT_CU16:
+        return 2 * sizeof(uint16_t);
     case FORMAT_CS16:
         return 2 * sizeof(int16_t);
+    case FORMAT_CU32:
+        return 2 * sizeof(uint32_t);
     case FORMAT_CS32:
         return 2 * sizeof(int32_t);
+    case FORMAT_CU64:
+        return 2 * sizeof(uint64_t);
     case FORMAT_CS64:
         return 2 * sizeof(int64_t);
     case FORMAT_CF32:
@@ -75,16 +87,28 @@ char const *sample_format_str(enum sample_format format)
     switch (format) {
     case FORMAT_NONE:
         return "none";
+    case FORMAT_CU4:
+        return "CU4";
+    case FORMAT_CS4:
+        return "CS4";
     case FORMAT_CU8:
         return "CU8";
     case FORMAT_CS8:
         return "CS8";
+    case FORMAT_CU12:
+        return "CU12";
     case FORMAT_CS12:
         return "CS12";
+    case FORMAT_CU16:
+        return "CU16";
     case FORMAT_CS16:
         return "CS16";
+    case FORMAT_CU32:
+        return "CU32";
     case FORMAT_CS32:
         return "CS32";
+    case FORMAT_CU64:
+        return "CU64";
     case FORMAT_CS64:
         return "CS64";
     case FORMAT_CF32:
@@ -99,16 +123,28 @@ enum sample_format sample_format_for(char const *format)
 {
     if (!format || !*format)
         return FORMAT_NONE;
+    else if (is_format_equal(format, "CU4"))
+        return FORMAT_CU4;
+    else if (is_format_equal(format, "CS4"))
+        return FORMAT_CS4;
     else if (is_format_equal(format, "CU8"))
         return FORMAT_CU8;
     else if (is_format_equal(format, "CS8"))
         return FORMAT_CS8;
+    else if (is_format_equal(format, "CU12"))
+        return FORMAT_CU12;
     else if (is_format_equal(format, "CS12"))
         return  FORMAT_CS12;
+    else if (is_format_equal(format, "CU16"))
+        return  FORMAT_CU16;
     else if (is_format_equal(format, "CS16"))
-        return  FORMAT_CS16;
+        return FORMAT_CS16;
+    else if (is_format_equal(format, "CU32"))
+        return FORMAT_CU32;
     else if (is_format_equal(format, "CS32"))
         return  FORMAT_CS32;
+    else if (is_format_equal(format, "CU64"))
+        return FORMAT_CU64;
     else if (is_format_equal(format, "CS64"))
         return  FORMAT_CS64;
     else if (is_format_equal(format, "CF32"))
@@ -126,16 +162,28 @@ enum sample_format sample_format_parse(char const *format)
     char const *p = format;
     while (*p && (*p < '0' || *p > '9') && (*p < 'A' || *p > 'Z') && (*p < 'a' || *p > 'z'))
         ++p;
-    if (strcasecmp(p, "CU8") == 0)
+    if (strcasecmp(p, "CU4") == 0)
+        return FORMAT_CU4;
+    else if (strcasecmp(p, "CS4") == 0)
+        return FORMAT_CS4;
+    else if (strcasecmp(p, "CU8") == 0)
         return FORMAT_CU8;
     else if (strcasecmp(p, "CS8") == 0)
         return FORMAT_CS8;
+    else if (strcasecmp(p, "CU12") == 0)
+        return FORMAT_CU12;
     else if (strcasecmp(p, "CS12") == 0)
         return FORMAT_CS12;
+    else if (strcasecmp(p, "CU16") == 0)
+        return FORMAT_CU16;
     else if (strcasecmp(p, "CS16") == 0)
         return FORMAT_CS16;
+    else if (strcasecmp(p, "CU32") == 0)
+        return FORMAT_CU32;
     else if (strcasecmp(p, "CS32") == 0)
         return FORMAT_CS32;
+    else if (strcasecmp(p, "CU64") == 0)
+        return FORMAT_CU64;
     else if (strcasecmp(p, "CS64") == 0)
         return FORMAT_CS64;
     else if (strcasecmp(p, "CF32") == 0)
@@ -163,37 +211,15 @@ enum sample_format file_info(char **path)
     }
 
     char const *ext = strrchr(*path, '.');
-    if ((colon && !strcasecmp(colon, "CU8"))
-            || (ext && !strcasecmp(ext, ".CU8"))) {
-        return FORMAT_CU8;
+
+    enum sample_format colon_fmt = sample_format_parse(colon);
+    enum sample_format ext_fmt = sample_format_parse(ext);
+
+    if (colon_fmt != FORMAT_NONE) {
+        return colon_fmt;
     }
-    else if ((colon && !strcasecmp(colon, "CS8"))
-            || (ext && !strcasecmp(ext, ".CS8"))) {
-        return FORMAT_CS8;
-    }
-    else if ((colon && !strcasecmp(colon, "CS12"))
-            || (ext && !strcasecmp(ext, ".CS12"))) {
-        return FORMAT_CS12;
-    }
-    else if ((colon && !strcasecmp(colon, "CS16"))
-            || (ext && !strcasecmp(ext, ".CS16"))) {
-        return FORMAT_CS16;
-    }
-    else if ((colon && !strcasecmp(colon, "CS32"))
-            || (ext && !strcasecmp(ext, ".CS32"))) {
-        return FORMAT_CS32;
-    }
-    else if ((colon && !strcasecmp(colon, "CS64"))
-            || (ext && !strcasecmp(ext, ".CS64"))) {
-        return FORMAT_CS64;
-    }
-    else if ((colon && !strcasecmp(colon, "CF32"))
-            || (ext && !strcasecmp(ext, ".CF32"))) {
-        return FORMAT_CF32;
-    }
-    else if ((colon && !strcasecmp(colon, "CF64"))
-            || (ext && !strcasecmp(ext, ".CF64"))) {
-        return FORMAT_CF64;
+    else if (ext_fmt != FORMAT_NONE) {
+        return ext_fmt;
     }
     // compatibility file extensions
     else if ((colon && !strcasecmp(colon, "DATA"))
