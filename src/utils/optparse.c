@@ -15,6 +15,14 @@
 #include <limits.h>
 #include <string.h>
 
+#ifdef _TEST
+#define FATAL(...) return 0xdead
+#define FATALV(...) return (void *)0xdead
+#else
+#define FATAL(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
+#define FATALV(...) do { fprintf(stderr, __VA_ARGS__); exit(1); } while(0)
+#endif
+
 int atobv(char *arg, int def)
 {
     if (!arg)
@@ -64,8 +72,7 @@ char *hostport_param(char *param, char **host, char **port)
                     *param++ = '\0';
                 }
                 else {
-                    fprintf(stderr, "Malformed Ipv6 address!\n");
-                    exit(1);
+                    FATALV("Malformed Ipv6 address!\n");
                 }
             }
         }
@@ -86,21 +93,18 @@ char *hostport_param(char *param, char **host, char **port)
 double atod_metric(const char *str, const char *error_hint)
 {
     if (!str) {
-        fprintf(stderr, "%smissing number argument\n", error_hint);
-        exit(1);
+        FATAL("%smissing number argument\n", error_hint);
     }
 
     if (!*str) {
-        fprintf(stderr, "%sempty number argument\n", error_hint);
-        exit(1);
+        FATAL("%sempty number argument\n", error_hint);
     }
 
     char *endptr;
     double val = strtod(str, &endptr);
 
     if (str == endptr) {
-        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
-        exit(1);
+        FATAL("%sinvalid number argument (%s)\n", error_hint, str);
     }
 
     // allow whitespace before suffix
@@ -112,19 +116,18 @@ double atod_metric(const char *str, const char *error_hint)
             break;
         case 'k':
         case 'K':
-            val *= 1e3;
+            val *= endptr[1] == 'i' ? (1 << 10) : 1e3;
             break;
         case 'M':
         case 'm':
-            val *= 1e6;
+            val *= endptr[1] == 'i' ? (1 << 20) : 1e6;
             break;
         case 'G':
         case 'g':
-            val *= 1e9;
+            val *= endptr[1] == 'i' ? (1 << 30) : 1e9;
             break;
         default:
-            fprintf(stderr, "%sunknown number suffix (%s)\n", error_hint, endptr);
-            exit(1);
+            FATAL("%sunknown number suffix (%s)\n", error_hint, endptr);
     }
 
     return val;
@@ -135,8 +138,7 @@ double atodu_metric(const char *str, const char *error_hint)
     double val = atod_metric(str, error_hint);
 
     if (val < 0.0) {
-        fprintf(stderr, "%snon-negative number argument expected (%f)\n", error_hint, val);
-        exit(1);
+        FATAL("%snon-negative number argument expected (%f)\n", error_hint, val);
     }
 
     return val;
@@ -146,9 +148,8 @@ int atoi_metric(const char *str, const char *error_hint)
 {
     double val = atod_metric(str, error_hint);
 
-    if (val > UINT32_MAX || val < -UINT32_MAX) {
-        fprintf(stderr, "%snumber argument too big (%f)\n", error_hint, val);
-        exit(1);
+    if (val > INT32_MAX || val < -INT32_MAX) {
+        FATAL("%snumber argument too big (%f)\n", error_hint, val);
     }
 
     if ((int)((val - (int)val) * 1e6) != 0) {
@@ -163,8 +164,7 @@ uint32_t atou_metric(const char *str, const char *error_hint)
     double val = atodu_metric(str, error_hint);
 
     if (val > UINT32_MAX) {
-        fprintf(stderr, "%snumber argument too big (%f)\n", error_hint, val);
-        exit(1);
+        FATAL("%snumber argument too big (%f)\n", error_hint, val);
     }
 
     if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
@@ -177,13 +177,11 @@ uint32_t atou_metric(const char *str, const char *error_hint)
 int atoi_time(const char *str, const char *error_hint)
 {
     if (!str) {
-        fprintf(stderr, "%smissing time argument\n", error_hint);
-        exit(1);
+        FATAL("%smissing time argument\n", error_hint);
     }
 
     if (!*str) {
-        fprintf(stderr, "%sempty time argument\n", error_hint);
-        exit(1);
+        FATAL("%sempty time argument\n", error_hint);
     }
 
     char *endptr    = NULL;
@@ -194,8 +192,7 @@ int atoi_time(const char *str, const char *error_hint)
         double num = strtod(str, &endptr);
 
         if (str == endptr) {
-            fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
-            exit(1);
+            FATAL("%sinvalid time argument (%s)\n", error_hint, str);
         }
 
         // allow whitespace before suffix
@@ -219,8 +216,7 @@ int atoi_time(const char *str, const char *error_hint)
             else if (colons == 3)
                 val += num;
             else {
-                fprintf(stderr, "%stoo many colons (use HH:MM[:SS]))\n", error_hint);
-                exit(1);
+                FATAL("%stoo many colons (use HH:MM[:SS]))\n", error_hint);
             }
             if (*endptr)
                 ++endptr;
@@ -246,8 +242,7 @@ int atoi_time(const char *str, const char *error_hint)
             ++endptr;
             break;
         default:
-            fprintf(stderr, "%sunknown time suffix (%s)\n", error_hint, endptr);
-            exit(1);
+            FATAL("%sunknown time suffix (%s)\n", error_hint, endptr);
         }
 
         // chew up any remaining whitespace
@@ -258,8 +253,7 @@ int atoi_time(const char *str, const char *error_hint)
     } while (*endptr);
 
     if (val > INT_MAX || val < INT_MIN) {
-        fprintf(stderr, "%stime argument too big (%f)\n", error_hint, val);
-        exit(1);
+        FATAL("%stime argument too big (%f)\n", error_hint, val);
     }
 
     if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
@@ -272,21 +266,18 @@ int atoi_time(const char *str, const char *error_hint)
 double atod_fraction(const char *str, const char *error_hint)
 {
     if (!str) {
-        fprintf(stderr, "%smissing fraction argument\n", error_hint);
-        exit(1);
+        FATAL("%smissing fraction argument\n", error_hint);
     }
 
     if (!*str) {
-        fprintf(stderr, "%sempty fraction argument\n", error_hint);
-        exit(1);
+        FATAL("%sempty fraction argument\n", error_hint);
     }
 
     char *endptr = NULL;
     double frac  = strtod(str, &endptr);
 
     if (str == endptr) {
-        fprintf(stderr, "%sinvalid fraction argument (%s)\n", error_hint, str);
-        exit(1);
+        FATAL("%sinvalid fraction argument (%s)\n", error_hint, str);
     }
 
     // allow whitespace before suffix
@@ -298,12 +289,11 @@ double atod_fraction(const char *str, const char *error_hint)
     }
 
     if (*endptr == '/') {
-        str = endptr;
+        str = ++endptr;
         double divs = strtod(str, &endptr);
 
         if (str == endptr || divs == 0.0) {
-            fprintf(stderr, "%sinvalid divisor argument (%s)\n", error_hint, str);
-            exit(1);
+            FATAL("%sinvalid divisor argument (%s)\n", error_hint, str);
         }
         return frac / divs;
     }
@@ -367,6 +357,7 @@ char *remove_ws(char *str)
 // Unit testing
 #ifdef _TEST
 #define ASSERT_EQUALS(a,b) if ((a) == (b)) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); }
+#define ASSERT_EQUALS_F(a,b) if ((a) - (b) < 1e-6) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %f <> %f\n", (a), (b)); }
 int main(int argc, char **argv)
 {
     unsigned passed = 0;
@@ -380,6 +371,33 @@ int main(int argc, char **argv)
     ASSERT_EQUALS(atou_metric("1.024k", ""), 1024);
     ASSERT_EQUALS(atou_metric("433.92MHz", ""), 433920000);
     ASSERT_EQUALS(atou_metric(" +1 G ", ""), 1000000000);
+    ASSERT_EQUALS(atou_metric("-0", ""), 0);
+    ASSERT_EQUALS(atou_metric("-1", ""), 0xdead);
+
+    fprintf(stderr, "optparse:: atoi_metric\n");
+    ASSERT_EQUALS(atoi_metric("5", ""), 5);
+    ASSERT_EQUALS(atoi_metric("0", ""), 0);
+    ASSERT_EQUALS(atoi_metric("-0", ""), 0);
+    ASSERT_EQUALS(atoi_metric("-5", ""), -5);
+    ASSERT_EQUALS(atoi_metric("4", ""), 4);
+    ASSERT_EQUALS(atoi_metric("4k", ""), 4000);
+    ASSERT_EQUALS(atoi_metric("4ki", ""), 4096);
+    ASSERT_EQUALS(atoi_metric("4m", ""), 4000000);
+    ASSERT_EQUALS(atoi_metric("4mi", ""), 4194304);
+
+    fprintf(stderr, "optparse:: atod_fraction\n");
+    ASSERT_EQUALS_F(atod_fraction("0", ""), 0.0);
+    ASSERT_EQUALS_F(atod_fraction("1", ""), 1.0);
+    ASSERT_EQUALS_F(atod_fraction("2", ""), 2.0);
+    ASSERT_EQUALS_F(atod_fraction("0.3", ""), 0.3);
+    ASSERT_EQUALS_F(atod_fraction("25%", ""), 0.25);
+    ASSERT_EQUALS_F(atod_fraction("1/10", ""), 0.1);
+    ASSERT_EQUALS_F(atod_fraction(" 0 ", ""), 0.0);
+    ASSERT_EQUALS_F(atod_fraction(" 1 ", ""), 1.0);
+    ASSERT_EQUALS_F(atod_fraction(" 2 ", ""), 2.0);
+    ASSERT_EQUALS_F(atod_fraction(" 0.3 ", ""), 0.3);
+    ASSERT_EQUALS_F(atod_fraction(" 25 % ", ""), 0.25);
+    ASSERT_EQUALS_F(atod_fraction(" 1 / 10 ", ""), 0.1);
 
     fprintf(stderr, "optparse:: atoi_time\n");
     ASSERT_EQUALS(atoi_time("0", ""), 0);
