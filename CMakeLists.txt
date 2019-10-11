@@ -66,14 +66,17 @@ list(APPEND TX_TOOLS_LIBS common)
 ########################################################################
 # Compiler specific setup
 ########################################################################
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
+    ADD_DEFINITIONS(-Winline)
     ADD_DEFINITIONS(-Wno-unused)
     ADD_DEFINITIONS(-Wno-unused-parameter)
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
-    ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
     ADD_DEFINITIONS(-Wdouble-promotion)
     ADD_DEFINITIONS(-Wformat-nonliteral)

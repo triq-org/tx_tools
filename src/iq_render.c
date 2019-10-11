@@ -99,71 +99,71 @@ static double sine_pk_level(double level)
     return level;
 }
 
-static double randf(void)
+static inline double randf(void)
 {
     // hotspot:
     return (double)rand() / RAND_MAX;
 }
 
-static int bound_u4(int x)
+static inline uint8_t bound_u4(int x)
 {
-    return x < 0 ? 0 : x > 0xf ? 0xf : x;
+    return x < 0 ? 0 : x > 0xf ? 0xf : (uint8_t)x;
 }
 
-static int bound_s4(int x)
+static inline int8_t bound_s4(int x)
 {
-    return x < -0x8 ? -0x8 : x > 0x7 ? 0x7 : x;
+    return x < -0x8 ? -0x8 : x > 0x7 ? 0x7 : (int8_t)x;
 }
 
-static int bound_u8(int x)
+static inline uint8_t bound_u8(int x)
 {
-    return x < 0 ? 0 : x > 0xff ? 0xff : x;
+    return x < 0 ? 0 : x > 0xff ? 0xff : (uint8_t)x;
 }
 
-static int bound_s8(int x)
+static inline int8_t bound_s8(int x)
 {
-    return x < -0x80 ? -0x80 : x > 0x7f ? 0x7f : x;
+    return x < -0x80 ? -0x80 : x > 0x7f ? 0x7f : (int8_t)x;
 }
 
-static int bound_u16(int x)
+static inline uint16_t bound_u16(int x)
 {
-    return x < 0 ? 0 : x > 0xffff ? 0xffff : x;
+    return x < 0 ? 0 : x > 0xffff ? 0xffff : (uint16_t)x;
 }
 
-static int bound_s16(int x)
+static inline int16_t bound_s16(int x)
 {
-    return x < -0x8000 ? -0x8000 : x > 0x7fff ? 0x7fff : x;
+    return x < -0x8000 ? -0x8000 : x > 0x7fff ? 0x7fff : (int16_t)x;
 }
 
-static uint32_t bound_u32(double x)
+static inline uint32_t bound_u32(double x)
 {
     return x < 0 ? 0 : x > 0xffffffff ? 0xffffffff : (uint32_t)x;
 }
 
-static int32_t bound_s32(double x)
+static inline int32_t bound_s32(double x)
 {
     return x < -0x7fffffff ? -0x7fffffff : x > 0x7fffffff ? 0x7fffffff : (int32_t)x;
 }
 
-static uint64_t bound_u64(double x)
+static inline uint64_t bound_u64(double x)
 {
     return x < 0 ? 0 : x > 0xffffffffffffffff ? 0xffffffffffffffff : (uint64_t)x;
 }
 
-static int64_t bound_s64(double x)
+static inline int64_t bound_s64(double x)
 {
     return x < -0x7fffffffffffffff ? -0x7fffffffffffffff : x > 0x7fffffffffffffff ? 0x7fffffffffffffff : (int64_t)x;
 }
 
 // inlines
 
-static void signal_out_flush(ctx_t *ctx)
+static inline void signal_out_flush(ctx_t *ctx)
 {
     write(ctx->fd, ctx->frame.u8, ctx->frame_len);
     ctx->frame_pos = ctx->frame_len = 0;
 }
 
-static void signal_out_maybe_flush(ctx_t *ctx)
+static inline void signal_out_maybe_flush(ctx_t *ctx)
 {
     if (ctx->frame_len >= ctx->frame_size) {
         write(ctx->fd, ctx->frame.u8, ctx->frame_size);
@@ -173,24 +173,32 @@ static void signal_out_maybe_flush(ctx_t *ctx)
 
 static void signal_out_cu4(ctx_t *ctx, double i, double q)
 {
-    uint8_t i8 = (uint8_t)bound_u4((int)((i + 1.0) * ctx->full_scale));
-    uint8_t q8 = (uint8_t)bound_u4((int)((q + 1.0) * ctx->full_scale));
+    // scale [-1.0, 1.0] to [0, 15] with uniform distribution,
+    // i.e. bias 7.5 -- not Excess-8
+    // this exact scale prevents 1.0==16
+    uint8_t i8 = bound_u4((int)(i * 7.999999 + 7.5 + 0.5));
+    uint8_t q8 = bound_u4((int)(q * 7.999999 + 7.5 + 0.5));
     ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8 << 4) | (q8);
     ctx->frame_len += 1 * sizeof(uint8_t);
 }
 
 static void signal_out_cs4(ctx_t *ctx, double i, double q)
 {
-    int8_t i8 = (int8_t)bound_s4((int)(i * ctx->full_scale));
-    int8_t q8 = (int8_t)bound_s4((int)(q * ctx->full_scale));
+    // scale [-1.0, 1.0] to [-7, 7] with uniform distribution
+    // this exact scale prevents 1.0==8, -1.0==-8
+    int8_t i8 = bound_s4((int)(i * 7.49999 + 8 + 0.5) - 8);
+    int8_t q8 = bound_s4((int)(q * 7.49999 + 8 + 0.5) - 8);
     ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8 << 4) | (q8 & 0xf);
     ctx->frame_len += 1 * sizeof(uint8_t);
 }
 
 static void signal_out_cu8(ctx_t *ctx, double i, double q)
 {
-    uint8_t i8 = (uint8_t)bound_u8((int)((i + 1.0) * ctx->full_scale));
-    uint8_t q8 = (uint8_t)bound_u8((int)((q + 1.0) * ctx->full_scale));
+    // scale [-1.0, 1.0] to [0, 255] with uniform distribution,
+    // i.e. bias 127.5 -- not Excess-128
+    // this exact scale prevents 1.0==256
+    uint8_t i8 = bound_u8((int)(i * 127.999999 + 127.5 + 0.5));
+    uint8_t q8 = bound_u8((int)(q * 127.999999 + 127.5 + 0.5));
     ctx->frame.u8[ctx->frame_pos++] = i8;
     ctx->frame.u8[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(uint8_t);
@@ -198,8 +206,10 @@ static void signal_out_cu8(ctx_t *ctx, double i, double q)
 
 static void signal_out_cs8(ctx_t *ctx, double i, double q)
 {
-    int8_t i8 = (int8_t)bound_s8((int)(i * ctx->full_scale));
-    int8_t q8 = (int8_t)bound_s8((int)(q * ctx->full_scale));
+    // scale [-1.0, 1.0] to [-127, 127] with uniform distribution
+    // this exact scale prevents 1.0==128, -1.0==-128
+    int8_t i8 = bound_s8((int)(i * 127.4999 + 128 + 0.5) - 128);
+    int8_t q8 = bound_s8((int)(q * 127.4999 + 128 + 0.5) - 128);
     ctx->frame.s8[ctx->frame_pos++] = i8;
     ctx->frame.s8[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int8_t);
@@ -207,8 +217,8 @@ static void signal_out_cs8(ctx_t *ctx, double i, double q)
 
 static void signal_out_cu12(ctx_t *ctx, double i, double q)
 {
-    uint16_t i8 = (uint16_t)bound_u16((int)((i + 1.0) * ctx->full_scale));
-    uint16_t q8 = (uint16_t)bound_u16((int)((q + 1.0) * ctx->full_scale));
+    uint16_t i8 = bound_u16((int)((i + 1.0) * ctx->full_scale));
+    uint16_t q8 = bound_u16((int)((q + 1.0) * ctx->full_scale));
     // produce 24 bit (iiqIQQ), note the input is LSB aligned, scale=2048
     // note: byte0 = i[7:0]; byte1 = {q[3:0], i[11:8]}; byte2 = q[11:4];
     ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8);
@@ -220,8 +230,8 @@ static void signal_out_cu12(ctx_t *ctx, double i, double q)
 
 static void signal_out_cs12(ctx_t *ctx, double i, double q)
 {
-    int16_t i8 = (int16_t)bound_s16((int)(i * ctx->full_scale));
-    int16_t q8 = (int16_t)bound_s16((int)(q * ctx->full_scale));
+    int16_t i8 = bound_s16((int)(i * ctx->full_scale + 2048 + 0.5) - 2048);
+    int16_t q8 = bound_s16((int)(q * ctx->full_scale + 2048 + 0.5) - 2048);
     // produce 24 bit (iiqIQQ), note the input is LSB aligned, scale=2048
     // note: byte0 = i[7:0]; byte1 = {q[3:0], i[11:8]}; byte2 = q[11:4];
     ctx->frame.u8[ctx->frame_pos++] = (uint8_t)(i8);
@@ -233,8 +243,8 @@ static void signal_out_cs12(ctx_t *ctx, double i, double q)
 
 static void signal_out_cu16(ctx_t *ctx, double i, double q)
 {
-    uint16_t i8 = (uint16_t)bound_u16((int)((i + 1.0) * ctx->full_scale));
-    uint16_t q8 = (uint16_t)bound_u16((int)((q + 1.0) * ctx->full_scale));
+    uint16_t i8 = bound_u16((int)((i + 1.0) * ctx->full_scale));
+    uint16_t q8 = bound_u16((int)((q + 1.0) * ctx->full_scale));
     ctx->frame.u16[ctx->frame_pos++] = i8;
     ctx->frame.u16[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(uint16_t);
@@ -242,8 +252,8 @@ static void signal_out_cu16(ctx_t *ctx, double i, double q)
 
 static void signal_out_cs16(ctx_t *ctx, double i, double q)
 {
-    int16_t i8 = (int16_t)bound_s16((int)(i * ctx->full_scale));
-    int16_t q8 = (int16_t)bound_s16((int)(q * ctx->full_scale));
+    int16_t i8 = bound_s16((int)(i * ctx->full_scale + 32768 + 0.5) - 32768);
+    int16_t q8 = bound_s16((int)(q * ctx->full_scale + 32768 + 0.5) - 32768);
     ctx->frame.s16[ctx->frame_pos++] = i8;
     ctx->frame.s16[ctx->frame_pos++] = q8;
     ctx->frame_len += 2 * sizeof(int16_t);
@@ -318,25 +328,25 @@ static signal_out_fn format_out[] = {
 };
 static double scale_defaults[] = {
         127.5,
-        7.5,
-        7.5,
-        127.5,
-        127.5,
-        2047.5,
-        2047.5,
-        32767.5,
-        32767.5,
-        2147483647.5,
-        2147483647.5,
-        9223372036854775999.5,
-        9223372036854775999.5,
+        7.999999,
+        7.49999,
+        127.999999,
+        127.4999,
+        2047.999999,
+        2047.4999,
+        32767.999999,
+        32767.4999,
+        2147483647.999999,
+        2147483647.4999,
+        9223372036854775999.999999,
+        9223372036854775999.4999,
         1.0,
         1.0,
 };
 
 // signal gen
 
-static void add_noise(ctx_t *ctx, size_t time_us, int db)
+static inline void add_noise(ctx_t *ctx, size_t time_us, int db)
 {
     size_t end =(size_t)(time_us * ctx->sample_rate / 1000000.0);
     for (size_t t = 0; t < end; ++t) {
@@ -366,7 +376,7 @@ static void init_filter(ctx_t *ctx, size_t time_us)
     }
 }
 
-static void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, int ph)
+static inline void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, int ph)
 {
     uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)ctx->sample_rate);
     // uint32_t phi = nco_phase((ssize_t)freq_hz, (size_t)ctx->sample_rate, global_time_us); // absolute phase

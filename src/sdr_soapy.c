@@ -225,7 +225,8 @@ static void show_device_info(SoapySDRDevice *dev, const int direction)
 	rates = SoapySDRDevice_getSampleRateRange(dev, direction, channel, &len);
 	fprintf(stderr, "Found %zu sample rate range(s): ", len);
 	for (i = 0; i < len; ++i) {
-		if (rates[i].minimum == rates[i].maximum)
+		// avoid a -Wfloat-equal warning
+		if (rates[i].maximum - rates[i].minimum < 1 )
 			fprintf(stderr, "%.0f ", rates[i].minimum);
 		else
 			fprintf(stderr, "%.0f - %.0f (step %.0f) ", rates[i].minimum, rates[i].maximum, rates[i].step);
