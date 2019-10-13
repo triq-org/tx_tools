@@ -58,7 +58,7 @@ endif ()
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 list(APPEND COMMON_SOURCES src/sdr_soapy.c src/tx_lib.c)
-list(APPEND COMMON_SOURCES src/read_text.c src/tone_text.c src/code_text.c src/pulse_text.c src/iq_render.c src/sample.c)
+list(APPEND COMMON_SOURCES src/read_text.c src/tone_text.c src/code_text.c src/pulse_text.c src/transform.c src/iq_render.c src/sample.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
 list(APPEND TX_TOOLS_LIBS common)
@@ -145,6 +145,8 @@ target_compile_definitions(encode_mc PRIVATE -DPROG_MC)
 
 add_executable(encode_imc src/transform.c)
 target_compile_definitions(encode_imc PRIVATE -DPROG_IMC)
+
+add_executable(byte-stat src/byte-stat.c)
 
 ########################################################################
 # Install executables
