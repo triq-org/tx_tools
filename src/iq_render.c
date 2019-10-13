@@ -48,9 +48,20 @@
 
 int abort_render = 0;
 
-// render context
 
-#define MAX_FILTER_SIZE 1000
+#define MAX_STEP_SIZE 1000
+
+/// Filter state.
+typedef struct filter_state {
+    double a[2 + 1]; // up to 2nd order
+    double b[2 + 1]; // up to 2nd order
+    double yi[2];
+    double xi[2];
+    double yq[2];
+    double xq[2];
+} filter_state_t;
+
+// render context
 
 typedef struct ctx ctx_t;
 
@@ -77,9 +88,11 @@ struct ctx {
     double g_hz;  ///< continuous freq
     uint32_t phi; ///< continuous phase
 
-    double filter_out[MAX_FILTER_SIZE];
-    double filter_in[MAX_FILTER_SIZE];
-    size_t filter_len;
+    double step_out[MAX_STEP_SIZE];
+    double step_in[MAX_STEP_SIZE];
+    size_t step_len;
+
+    filter_state_t filter_state;
 };
 
 // helper
@@ -166,8 +179,7 @@ static inline void signal_out_flush(ctx_t *ctx)
 static inline void signal_out_maybe_flush(ctx_t *ctx)
 {
     if (ctx->frame_len >= ctx->frame_size) {
-        write(ctx->fd, ctx->frame.u8, ctx->frame_size);
-        ctx->frame_pos = ctx->frame_len = 0;
+        signal_out_flush(ctx);
     }
 }
 
@@ -346,41 +358,108 @@ static double scale_defaults[] = {
 
 // signal gen
 
-static inline void add_noise(ctx_t *ctx, size_t time_us, int db)
+static void init_step(ctx_t *ctx, size_t time_us)
 {
-    size_t end =(size_t)(time_us * ctx->sample_rate / 1000000.0);
-    for (size_t t = 0; t < end; ++t) {
-        double x = (randf() - 0.5) * ctx->noise_floor;
-        double y = (randf() - 0.5) * ctx->noise_floor;
-        ctx->signal_out(ctx, x, y);
-        signal_out_maybe_flush(ctx);
-    }
-}
-
-static void init_filter(ctx_t *ctx, size_t time_us)
-{
-    ctx->filter_len = (size_t)(time_us * ctx->sample_rate / 1000000.0);
-    if (ctx->filter_len > MAX_FILTER_SIZE)
-        ctx->filter_len = MAX_FILTER_SIZE;
+    ctx->step_len = (size_t)(time_us * ctx->sample_rate / 1000000.0);
+    if (ctx->step_len > MAX_STEP_SIZE)
+        ctx->step_len = MAX_STEP_SIZE;
     //uint32_t l_phi = 0;
     //uint32_t d_phi = nco_d_phase(1000000 / 2 / time_us, (size_t)ctx->sample_rate);
-    for (size_t t = 0; t < ctx->filter_len; ++t) {
-        // naive linear filter
-        ctx->filter_out[t] = (ctx->filter_len - t) / (double)ctx->filter_len;
-        ctx->filter_in[t]  = t / (double)ctx->filter_len;
+    for (size_t t = 0; t < ctx->step_len; ++t) {
+        // naive linear stepping
+        ctx->step_out[t] = (ctx->step_len - t) / (double)ctx->step_len;
+        ctx->step_in[t]  = t / (double)ctx->step_len;
 
-        //ctx->filter_out[t] = (nco_cos(l_phi) + 1) / 2;
-        //printf("at %2d : %f\n", t, ctx->filter_out[t]);
-        //ctx->filter_in[t]  = 1.0 - ctx->filter_out[t];
+        //ctx->step_out[t] = (nco_cos(l_phi) + 1) / 2;
+        //printf("at %2d : %f\n", t, ctx->step_out[t]);
+        //ctx->step_in[t]  = 1.0 - ctx->step_out[t];
         //l_phi += d_phi;
     }
 }
 
+static void init_filter(ctx_t *ctx, double wc)
+{
+    // wc is the ratio of cutoff and sampling freq: wc = f_cutoff / f_sampling
+    // [b,a] = butter(2, Wc) # low pass filter with cutoff pi*Wc radians
+
+    if (wc >= 0.5) {
+        // flat, no filter
+        ctx->filter_state = (filter_state_t){
+                .a = {1.00000, 0.00000, 0.00000},
+                .b = {1.00000, 0.00000, 0.00000},
+        };
+        return;
+    }
+
+    // Calculate coefficients of 2nd order Butterworth Low Pass Filter
+    //y(n) = b0.x(n) + b1.x(n-1) + b2.x(n-2) + a1.y(n-1) + a2.y(n-2)
+    double ita = 1.0 / tan(M_PI * wc);
+    double q   = sqrt(2.0);
+    double b0  = 1.0 / (1.0 + q * ita + ita * ita);
+    double b1  = 2 * b0;
+    double b2  = b0;
+    double a1  = 2.0 * (ita * ita - 1.0) * b0;
+    double a2  = -(1.0 - q * ita + ita * ita) * b0;
+    //printf("b0: %f b1: %f b2: %f a1: %f a2: %f\n", b0, b1, b2, a1, a2);
+
+    ctx->filter_state = (filter_state_t){
+            .a = {1.00000, a1, a2},
+            .b = {b0, b1, b2},
+    };
+}
+
+static inline double apply_filter_i(ctx_t *ctx, double x)
+{
+    double *xi = ctx->filter_state.xi;
+    double *yi = ctx->filter_state.yi;
+    double *a = ctx->filter_state.a;
+    double *b = ctx->filter_state.b;
+
+    double y = a[1] * yi[0]
+               + a[2] * yi[1]
+               + b[0] * x
+               + b[1] * xi[0]
+               + b[2] * xi[1];
+
+    xi[1] = xi[0];
+    xi[0] = x;
+    yi[1] = yi[0];
+    yi[0] = y;
+
+    return y;
+}
+
+static inline double apply_filter_q(ctx_t *ctx, double x)
+{
+    double *xq = ctx->filter_state.xq;
+    double *yq = ctx->filter_state.yq;
+    double *a  = ctx->filter_state.a;
+    double *b  = ctx->filter_state.b;
+
+    double y = a[1] * yq[0]
+               + a[2] * yq[1]
+               + b[0] * x
+               + b[1] * xq[0]
+               + b[2] * xq[1];
+
+    xq[1] = xq[0];
+    xq[0] = x;
+    yq[1] = yq[0];
+    yq[0] = y;
+
+    return y;
+}
+
 static inline void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, int ph)
 {
+    //uint32_t g_phi = nco_d_phase((ssize_t)ctx->g_hz, (size_t)ctx->sample_rate);
     uint32_t d_phi = nco_d_phase((ssize_t)freq_hz, (size_t)ctx->sample_rate);
     // uint32_t phi = nco_phase((ssize_t)freq_hz, (size_t)ctx->sample_rate, global_time_us); // absolute phase
     // uint32_t phi = 0; // relative phase
+
+    //printf("Phase delta: %u vs %u (%u to %u)\n", g_phi, d_phi,
+    //        (uint32_t)(ctx->step_out[0] * g_phi + ctx->step_in[0] * d_phi),
+    //        (uint32_t)(ctx->step_out[ctx->step_len-1] * g_phi + ctx->step_in[ctx->step_len-1] * d_phi));
 
     // phase offset if requested
     while (ph < 0)
@@ -400,18 +479,27 @@ static inline void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, 
     for (size_t t = 0; t < end; ++t) {
 
         // ramp in and out
-        double att = t < ctx->filter_len ? ctx->filter_out[t] * g_att + ctx->filter_in[t] * n_att : n_att;
+        double att = t < ctx->step_len ? ctx->step_out[t] * g_att + ctx->step_in[t] * n_att : n_att;
 
         // complex I/Q
-        double x = nco_cos(ctx->phi) * ctx->gain * att;
-        double y = nco_sin(ctx->phi) * ctx->gain * att;
+        double i = nco_cos(ctx->phi) * ctx->gain * att;
+        double q = nco_sin(ctx->phi) * ctx->gain * att;
         ctx->phi += d_phi;
+        //ctx->phi += t < ctx->step_len ? ctx->step_out[t] * g_phi + ctx->step_in[t] * d_phi : d_phi;
 
         // disturb
-        x += (randf() - 0.5) * ctx->noise_signal;
-        y += (randf() - 0.5) * ctx->noise_signal;
+        i += (randf() - 0.5) * ctx->noise_signal;
+        q += (randf() - 0.5) * ctx->noise_signal;
 
-        ctx->signal_out(ctx, x, y);
+        // band limit
+        i = apply_filter_i(ctx, i);
+        q = apply_filter_q(ctx, q);
+
+        // disturb
+        i += (randf() - 0.5) * ctx->noise_floor;
+        q += (randf() - 0.5) * ctx->noise_floor;
+
+        ctx->signal_out(ctx, i, q);
         signal_out_maybe_flush(ctx);
     }
 }
@@ -448,10 +536,11 @@ size_t iq_render_length_smp(iq_render_t *spec, tone_t *tones)
 void iq_render_defaults(iq_render_t *spec)
 {
     spec->sample_rate  = DEFAULT_SAMPLE_RATE;
-    spec->noise_floor  = -19;
-    spec->noise_signal = -25;
+    spec->noise_floor  = -36;
+    spec->noise_signal = -24;
     spec->gain         = -3;
-    spec->filter_width = 50;
+    spec->filter_wc    = 0.1;
+    spec->step_width   = 50;
     spec->frame_size   = DEFAULT_BUF_LENGTH;
 }
 
@@ -495,7 +584,8 @@ static void iq_render_init(ctx_t *ctx, iq_render_t *spec)
 
     init_db_lut();
     nco_init();
-    init_filter(ctx, spec->filter_width);
+    init_step(ctx, spec->step_width);
+    init_filter(ctx, spec->filter_wc);
 }
 
 static size_t iq_render(ctx_t *ctx, tone_t *tones)
@@ -504,7 +594,6 @@ static size_t iq_render(ctx_t *ctx, tone_t *tones)
 
     for (tone_t *tone = tones; (tone->us || tone->hz) && !abort_render; ++tone) {
         if (tone->db < -24) {
-            //add_noise((size_t)tone->us, tone->db);
             add_sine(ctx, ctx->g_hz, (size_t)tone->us, tone->db, tone->ph);
         }
         else {

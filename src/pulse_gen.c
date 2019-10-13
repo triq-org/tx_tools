@@ -76,7 +76,8 @@ static void usage(int exitcode)
             "\t[-g signal gain dBFS or multiplier]\n"
             "\t Gain level < 0 for attenuation in dBFS, otherwise amplitude multiplier, 0 is 0 dBFS.\n"
             "\t Levels as dbFS or multiplier are peak values, e.g. 0 dB or 1.0 x are equivalent to -3 dB RMS.\n"
-            "\t[-G filter width in us]\n"
+            "\t[-W filter ratio]\n"
+            "\t[-G step width in us]\n"
             "\t[-b output_block_size (default: 16 * 16384) bytes]\n"
             "\t[-r file] read code from file ('-' reads from stdin)\n"
             "\t[-t pulse_text] parse given code text\n"
@@ -123,7 +124,7 @@ int main(int argc, char **argv)
     print_version();
 
     int opt;
-    while ((opt = getopt(argc, argv, "hVvs:m:f:F:a:A:p:P:n:N:g:G:b:r:w:t:M:S:")) != -1) {
+    while ((opt = getopt(argc, argv, "hVvs:m:f:F:a:A:p:P:n:N:g:W:G:b:r:w:t:M:S:")) != -1) {
         switch (opt) {
         case 'h':
             usage(0);
@@ -165,8 +166,11 @@ int main(int argc, char **argv)
         case 'g':
             spec.gain = atod_metric(optarg, "-g: ");
             break;
+        case 'W':
+            spec.filter_wc = atodu_metric(optarg, "-W: ");
+            break;
         case 'G':
-            spec.filter_width = atou_metric(optarg, "-G: ");
+            spec.step_width = atou_metric(optarg, "-G: ");
             break;
         case 'b':
             spec.frame_size = atou_metric(optarg, "-b: ");
