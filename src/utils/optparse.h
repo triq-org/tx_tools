@@ -47,8 +47,8 @@ char *hostport_param(char *param, char **host, char **port);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed number value
 double atod_metric(const char *str, const char *error_hint);
 
@@ -57,8 +57,8 @@ double atod_metric(const char *str, const char *error_hint);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed number value
 double atodu_metric(const char *str, const char *error_hint);
 
@@ -67,8 +67,8 @@ double atodu_metric(const char *str, const char *error_hint);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed number value
 int atoi_metric(const char *str, const char *error_hint);
 
@@ -77,8 +77,8 @@ int atoi_metric(const char *str, const char *error_hint);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed number value
 uint32_t atou_metric(const char *str, const char *error_hint);
 
@@ -88,8 +88,8 @@ uint32_t atou_metric(const char *str, const char *error_hint);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed time value in seconds
 int atoi_time(const char *str, const char *error_hint);
 
@@ -99,14 +99,14 @@ int atoi_time(const char *str, const char *error_hint);
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///
-/// @param str: character string to parse
-/// @param error_hint: prepended to error output
+/// @param str character string to parse
+/// @param error_hint prepended to error output
 /// @return parsed factor value
 double atod_fraction(const char *str, const char *error_hint);
 
 /// Similar to strsep.
 ///
-/// @param[in,out] stringp
+/// @param[in,out] stringp The string to be split in-place.
 /// @param delim the delimiter character
 /// @return the original value of *stringp
 char *asepc(char **stringp, char delim);
@@ -124,13 +124,13 @@ char *getkwargs(char **s, char **key, char **val);
 
 /// Trim left and right whitespace in string.
 ///
-/// @param[in,out] str
+/// @param[in,out] str The string to be modified in-place.
 /// @return the trimmed value of str
 char *trim_ws(char *str);
 
 /// Remove all whitespace from string.
 ///
-/// @param[in,out] str
+/// @param[in,out] str The string to be modified in-place.
 /// @return the stripped value of str
 char *remove_ws(char *str);
 
