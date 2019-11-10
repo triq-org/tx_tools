@@ -26,6 +26,12 @@
 
 #include "sample.h"
 
+typedef struct preset {
+    char *name;
+    char *desc;
+    char *text;
+} preset_t;
+
 typedef struct dev_info {
     char *dev_kwargs;
     char *driver_key;
@@ -37,6 +43,7 @@ typedef struct tx_ctx {
     size_t devs_len;
     void *devs;
     dev_info_t *dev_infos;
+    preset_t *presets;
 } tx_ctx_t;
 
 typedef struct tx_cmd {
@@ -68,18 +75,23 @@ typedef struct tx_cmd {
     void *stream_buffer;
     size_t buffer_offset;
     size_t buffer_size;
-    // input from text (OOK, ASK, FSK, PSK)
+    // input from code text
+    char const *preset; ///< preset name to load, if any
+    char const *codes; ///< code text
+    // input from pulse text (OOK, ASK, FSK, PSK)
     int freq_mark;   ///< frequency offset for mark
     int freq_space;  ///< frequency offset for space, 0 otherwise
     int att_mark;    ///< attenuation for mark
     int att_space;   ///< attenuation for space, 0 otherwise
     int phase_mark;  ///< phase offset for mark, 0 otherwise
     int phase_space; ///< phase offset for space, 0 otherwise
-    char const *pulses;
+    char const *pulses; ///< pulse text or code text
     // private
     int flag_abort; ///< private
     frame_t conv_buf;
 } tx_cmd_t;
+
+// sample format support
 
 /// Is the format string a valid input format?
 int tx_valid_input_format(char const *format);
@@ -90,17 +102,37 @@ int tx_valid_output_format(char const *format);
 /// Parse SoapySDR format string.
 char const *tx_parse_sample_format(char const *format);
 
+// device support
+
 /// Enumerate all devices.
 void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);
 
 /// Unmake all devices.
 void tx_free_devices(tx_ctx_t *tx_ctx);
 
+// commands
+
 /// Transmit data.
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
 
+int dont_tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
 /// Print transmit data (debug).
 void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+
+/// Free transmit data.
+void tx_cmd_free(tx_cmd_t *tx);
+
+// presets support
+
+/// Scan for presets.
+preset_t *tx_presets_load(tx_ctx_t *tx_ctx, char const *dir_name);
+
+/// Free presets and backing.
+void tx_presets_free(tx_ctx_t *tx_ctx);
+
+/// Get a named presets.
+preset_t *tx_presets_get(tx_ctx_t *tx_ctx, char const *name);
 
 // input processing
 

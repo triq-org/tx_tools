@@ -649,6 +649,11 @@ int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_
     size_t smp = iq_render_length_smp(spec, tones);
     ctx.frame_size = smp * sample_format_length(ctx.sample_format);
 
+    if (!ctx.frame_size) {
+        fprintf(stderr, "Warning: no samples to render.\n");
+        return 0;
+    }
+
     ctx.frame.u8 = malloc(ctx.frame_size);
     if (!ctx.frame.u8) {
         fprintf(stderr, "Failed to allocate output buffer of %zu bytes.\n", ctx.frame_size);
@@ -667,6 +672,8 @@ int iq_render_buf(iq_render_t *spec, tone_t *tones, void **out_buf, size_t *out_
 
     if (out_buf)
         *out_buf = ctx.frame.u8;
+    else
+        free(ctx.frame.u8);
     if (out_len)
         *out_len = ctx.frame_size - 1;
     return 0;

@@ -29,7 +29,7 @@
 
 // file helper
 
-char const *read_text_fd(int fd, char const *file_hint)
+char *read_text_fd(int fd, char const *file_hint)
 {
     char *text = NULL;
 
@@ -48,10 +48,10 @@ char const *read_text_fd(int fd, char const *file_hint)
     return text;
 }
 
-char const *read_text_file(char const *filename)
+char *read_text_file(char const *filename)
 {
     int fd = open(filename, O_RDONLY);
-    char const *text = read_text_fd(fd, filename);
+    char *text = read_text_fd(fd, filename);
     close(fd);
     return text;
 }

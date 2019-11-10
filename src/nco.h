@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h> // for ssize_t
 
 #include <math.h>
 #ifndef M_PI

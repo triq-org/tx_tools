@@ -152,3 +152,21 @@ add_executable(byte-stat src/byte-stat.c)
 # Install executables
 ########################################################################
 install(TARGETS tx_sdr DESTINATION bin)
+
+########################################################################
+# Build tests with analyzer
+########################################################################
+option(BUILD_TESTING_ANALYZER "Build the testing tree with static
+analyzer (requires Clang)" OFF)
+
+########################################################################
+# Build tests
+########################################################################
+include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
+
+########################################################################
+# Add subdirectories
+########################################################################
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif(BUILD_TESTING)

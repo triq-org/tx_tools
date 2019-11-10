@@ -245,6 +245,33 @@ symbol_t *parse_code(char const *code, symbol_t *symbols)
     return symbols;
 }
 
+char *parse_code_desc(char const *code)
+{
+    if (!code || !*code)
+        return NULL;
+
+    size_t len = strlen(code);
+    char *desc = malloc(len);
+
+    char const *p = code;
+    while (*p) {
+        // find a desc start
+        while (*p && (*p != '#' || p[1] != ' '))
+            ++p;
+        if (!*p) break;
+
+        p += 2; // skip '# '
+        char const *s = p;
+        while (*p && *p != '\r' && *p != '\n')
+            ++p;
+        while (*p == '\r' || *p == '\n')
+            ++p;
+
+        strncat(desc, s, (size_t)(p - s)); // we known it'll fit
+    }
+    return desc;
+}
+
 void free_symbols(symbol_t *symbols)
 {
     if (symbols)

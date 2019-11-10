@@ -24,8 +24,8 @@
 
 // helper to get file contents
 
-char const *read_text_fd(int fd, char const *file_hint);
+char *read_text_fd(int fd, char const *file_hint);
 
-char const *read_text_file(char const *filename);
+char *read_text_file(char const *filename);
 
 #endif /* INCLUDE_READTEXT_H_ */

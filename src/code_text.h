@@ -33,6 +33,8 @@ symbol_t *parse_code(char const *code, symbol_t *symbols);
 
 symbol_t *parse_code_file(char const *filename, symbol_t *symbols);
 
+char *parse_code_desc(char const *code);
+
 void free_symbols(symbol_t *symbols);
 
 // debug output to stdout

@@ -55,15 +55,20 @@ static void skip_ws_c(char const **buf)
 
 static unsigned atoi_timescale(const char *str)
 {
+    if (!str) {
+        fprintf(stderr, "missing number argument\n");
+        exit(1);
+    }
+
     char *p;
     double val = strtod(str, &p);
 
-    if (str == p) {
+    if (!p || str == p) {
         fprintf(stderr, "invalid number argument \"%.5s\"\n", str);
         exit(1);
     }
 
-    while (p && *p == ' ' && *p == '\t')
+    while (*p == ' ' || *p == '\t')
         ++p;
 
     if (*p == 'n' && p[1] == 's')
@@ -90,7 +95,7 @@ static void parse_param(char const **buf, pulse_setup_t *params)
 
     // get key
     char const *e = p;
-    while (e && *e != ' ' && *e != '\t')
+    while (*e != ' ' && *e != '\t')
         ++e;
 
     if (e - p == 9 && !strncmp(p, "timescale", 9))
@@ -126,7 +131,7 @@ static int parse_len(char const **buf)
     char *endptr;
     double val = strtod(p, &endptr);
 
-    if (p == endptr) {
+    if (!endptr || p == endptr) {
         fprintf(stderr, "invalid number argument \"%.5s\"\n", p);
         exit(1);
     }
@@ -210,7 +215,6 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
     if (!defaults)
         return NULL;
 
-
     // sum pulse count
 
     unsigned count = 0;
@@ -227,7 +231,6 @@ tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults)
 
         count += 2;
     }
-
 
     // parse and generate pulses
 

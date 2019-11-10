@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 
 #include "sdr_soapy.h"
 #include <SoapySDR/Device.h>
@@ -65,6 +66,73 @@ char const *tx_parse_sample_format(char const *format)
 static int is_format_equal(const void *a, const void *b)
 {
     return *(const uint32_t *)a == *(const uint32_t *)b;
+}
+
+// presets
+
+preset_t *tx_presets_load(tx_ctx_t *tx_ctx, char const *dir_name)
+{
+    DIR *dir;
+    dir = opendir(dir_name);
+    if (!dir) {
+        fprintf(stderr, "presets: no such directory \"%s\".\n", dir_name);
+        return NULL;
+    }
+
+    preset_t *presets = calloc(100, sizeof(*presets));
+    unsigned i = 0;
+
+    char path[256];
+    struct dirent *ent;
+    while ((ent = readdir(dir)) != NULL) {
+        printf("%s\n", ent->d_name);
+        // TODO: check if really a preset file
+        if (*ent->d_name != '.') {
+            snprintf(path, sizeof(path), "%s/%s", dir_name, ent->d_name);
+            presets[i].name = strdup(ent->d_name);
+            presets[i].text = read_text_file(path);
+            presets[i].desc = parse_code_desc(presets[i].text);
+            i++;
+        }
+    }
+
+    closedir(dir);
+
+    tx_presets_free(tx_ctx);
+    tx_ctx->presets = presets;
+
+    return presets;
+}
+
+void tx_presets_free(tx_ctx_t *tx_ctx)
+{
+    preset_t *presets = tx_ctx->presets;
+    if (!presets)
+        return;
+
+    tx_ctx->presets = NULL;
+
+    for (unsigned i = 0; presets[i].name; ++i) {
+        free(presets[i].name);
+        free(presets[i].desc);
+        free(presets[i].text);
+    }
+
+    free(presets);
+}
+
+preset_t *tx_presets_get(tx_ctx_t *tx_ctx, char const *name)
+{
+    preset_t *presets = tx_ctx->presets;
+    if (!presets || !name || !*name)
+        return NULL;
+
+    for (unsigned i = 0; presets[i].name; ++i) {
+        if (!strcmp(presets[i].name, name))
+            return &presets[i];
+    }
+
+    return NULL;
 }
 
 // api
@@ -432,25 +500,61 @@ void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     printf("    pulses=\"%s\"\n", tx->pulses);
 }
 
+void tx_cmd_free(tx_cmd_t *tx)
+{
+    free(tx->dev_query);
+    free(tx->gain_str);
+    free(tx->antenna);
+    free(tx->output_format);
+    free(tx->input_format);
+    free(tx->preset);
+    free(tx->codes);
+    free(tx->pulses);
+}
+
 // input processing
 
 int tx_input_init(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
 {
-    // unpack pulses if needed
+    // unpack codes if requested
+    if (tx->codes) {
+        iq_render_t iq_render = {0};
+        iq_render_defaults(&iq_render);
+        iq_render.sample_rate   = tx->sample_rate;
+        iq_render.sample_format = sample_format_for(tx->output_format);
 
+        symbol_t *symbols = NULL;
+        preset_t *preset  = NULL;
+        if (tx->preset) {
+            preset = tx_presets_get(tx_ctx, tx->preset);
+        }
+        if (preset) {
+            symbols = parse_code(preset->text, symbols);
+        }
+
+        symbols = parse_code(tx->codes, symbols);
+        output_symbol(symbols); // debug
+
+        iq_render_buf(&iq_render, symbols->tone, &tx->stream_buffer, &tx->buffer_size);
+        free(symbols);
+
+        return 0;
+    }
+
+    // unpack pulses if requested
     if (tx->pulses) {
         iq_render_t iq_render = {0};
         iq_render_defaults(&iq_render);
-        iq_render.sample_rate = tx->sample_rate;
+        iq_render.sample_rate   = tx->sample_rate;
         iq_render.sample_format = sample_format_for(tx->output_format);
 
         pulse_setup_t pulse_setup = {0};
         pulse_setup_defaults(&pulse_setup, "OOK");
-        pulse_setup.freq_mark = tx->freq_mark;
-        pulse_setup.freq_space = tx->freq_space;
-        pulse_setup.att_mark = tx->att_mark;
-        pulse_setup.att_space = tx->att_space;
-        pulse_setup.phase_mark = tx->phase_mark;
+        pulse_setup.freq_mark   = tx->freq_mark;
+        pulse_setup.freq_space  = tx->freq_space;
+        pulse_setup.att_mark    = tx->att_mark;
+        pulse_setup.att_space   = tx->att_space;
+        pulse_setup.phase_mark  = tx->phase_mark;
         pulse_setup.phase_space = tx->phase_space;
 
         tone_t *tones = parse_pulses(tx->pulses, &pulse_setup);

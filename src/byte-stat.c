@@ -72,6 +72,11 @@ static void print_stat(char *filename)
 
     close(fd);
 
+    if (!n_offs) {
+        printf("Empty file \"%s\"\n", filename);
+        return;
+    }
+
     printf("%zu bytes in \"%s\" are (percentages, 100=uniform distribution)\n", n_offs, filename);
 
     printf("\n4-bit wide low nibble:\n");
