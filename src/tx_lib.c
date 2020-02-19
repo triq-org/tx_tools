@@ -38,10 +38,6 @@
 #define MINIMAL_BUF_LENGTH 512
 #define MAXIMAL_BUF_LENGTH (256 * 16384)
 
-// missing prototypes
-SoapySDRDevice **SoapySDRDevice_make_each(SoapySDRKwargs *argsList, const size_t length);
-int SoapySDRDevice_unmake_each(SoapySDRDevice **devices, const size_t length);
-
 // helpers
 
 int tx_valid_input_format(char const *format)
@@ -158,8 +154,8 @@ void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args)
     }
 
     // make all devices
-    fprintf(stderr, "SoapySDRDevice_make_each()...\n");
-    SoapySDRDevice **devs = SoapySDRDevice_make_each(devs_kwargs, devs_len);
+    fprintf(stderr, "SoapySDRDevice_make_list()...\n");
+    SoapySDRDevice **devs = SoapySDRDevice_make_list(devs_kwargs, devs_len);
     SoapySDRKwargsList_clear(devs_kwargs, devs_len); // frees entries and struct
 
     fprintf(stderr, "SoapySDRDevice_getDriverKey()...\n");
@@ -191,9 +187,9 @@ void tx_free_devices(tx_ctx_t *tx_ctx)
     }
     free(tx_ctx->dev_infos);
 
-    fprintf(stderr, "SoapySDRDevice_unmake_each()...\n");
+    fprintf(stderr, "SoapySDRDevice_unmake_list()...\n");
     SoapySDRDevice **devs = (SoapySDRDevice **)tx_ctx->devs;
-    SoapySDRDevice_unmake_each(devs, tx_ctx->devs_len);
+    SoapySDRDevice_unmake_list(devs, tx_ctx->devs_len);
 }
 
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
