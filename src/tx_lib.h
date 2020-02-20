@@ -32,17 +32,20 @@ typedef struct preset {
     char *text;
 } preset_t;
 
-typedef struct dev_info {
+typedef struct tx_dev {
+    char const *backend;
+    void *device;
     char *dev_kwargs;
+    char *context_name;
+    char *context_description;
     char *driver_key;
     char *hardware_key;
     char *hardware_info;
-} dev_info_t;
+} tx_dev_t;
 
 typedef struct tx_ctx {
     size_t devs_len;
-    void *devs;
-    dev_info_t *dev_infos;
+    tx_dev_t *devs;
     preset_t *presets;
 } tx_ctx_t;
 
@@ -75,6 +78,11 @@ typedef struct tx_cmd {
     void *stream_buffer;
     size_t buffer_offset;
     size_t buffer_size;
+    // private
+    double fullScale;
+    int flag_abort; ///< private
+    frame_t conv_buf;
+
     // input from code text
     char const *preset; ///< preset name to load, if any
     char const *codes; ///< code text
@@ -86,10 +94,10 @@ typedef struct tx_cmd {
     int phase_mark;  ///< phase offset for mark, 0 otherwise
     int phase_space; ///< phase offset for space, 0 otherwise
     char const *pulses; ///< pulse text or code text
-    // private
-    int flag_abort; ///< private
-    frame_t conv_buf;
 } tx_cmd_t;
+
+/// Show all available backends.
+char const *tx_available_backends(void);
 
 // sample format support
 
@@ -104,18 +112,19 @@ char const *tx_parse_sample_format(char const *format);
 
 // device support
 
-/// Enumerate all devices.
-void tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);
+/// Enumerate all devices and acquire them.
+int tx_enum_devices(tx_ctx_t *tx_ctx, const char *enum_args);
 
-/// Unmake all devices.
-void tx_free_devices(tx_ctx_t *tx_ctx);
+/// Release all devices.
+int tx_release_devices(tx_ctx_t *sdr_ctx);
+
+/// Release and free all devices.
+int tx_free_devices(tx_ctx_t *tx_ctx);
 
 // commands
 
 /// Transmit data.
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
-
-int dont_tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
 
 /// Print transmit data (debug).
 void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
@@ -138,14 +147,5 @@ preset_t *tx_presets_get(tx_ctx_t *tx_ctx, char const *name);
 
 /// Prepare input data.
 int tx_input_init(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
-
-/// Discard and close input data.
-int tx_input_destroy(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
-
-/// Reset input data.
-int tx_input_reset(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
-
-/// Read input data.
-ssize_t tx_input_read(tx_ctx_t *tx_ctx, tx_cmd_t *tx, void *buf, size_t *out_samps, double fullScale);
 
 #endif /* INCLUDE_TXLIB_H_ */

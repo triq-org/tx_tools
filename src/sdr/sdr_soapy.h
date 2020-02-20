@@ -34,7 +34,7 @@ char * strsep(char **sp, char *sep);
  * \return 0 on success
  */
 
-int verbose_set_frequency(SoapySDRDevice *dev, const int direction, double frequency);
+int soapy_set_frequency(SoapySDRDevice *dev, const int direction, double frequency);
 
 /*!
  * Set device sample rate and report status on stderr
@@ -45,7 +45,7 @@ int verbose_set_frequency(SoapySDRDevice *dev, const int direction, double frequ
  * \return 0 on success
  */
 
-int verbose_set_sample_rate(SoapySDRDevice *dev, const int direction, double samp_rate);
+int soapy_set_sample_rate(SoapySDRDevice *dev, const int direction, double samp_rate);
 
 /*!
  * Set device bandwidth and report status on stderr
@@ -56,7 +56,7 @@ int verbose_set_sample_rate(SoapySDRDevice *dev, const int direction, double sam
  * \return 0 on success
  */
 
-int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandwidth);
+int soapy_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandwidth);
 
 /*!
  * Set tuner gain elements by a key/value string
@@ -65,7 +65,7 @@ int verbose_set_bandwidth(SoapySDRDevice *dev, const int direction, double bandw
  * \param gain_str string of gain element pairs (example LNA=40,VGA=20,AMP=0), or string of overall gain, in dB
  * \return 0 on success
  */
-int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str);
+int soapy_gain_str_set(SoapySDRDevice *dev, char const *gain_str);
 
 /*!
  * Set the frequency correction value for the device and report status on stderr.
@@ -75,7 +75,7 @@ int verbose_gain_str_set(SoapySDRDevice *dev, char const *gain_str);
  * \return 0 on success
  */
 
-int verbose_ppm_set(SoapySDRDevice *dev, double ppm_error);
+int soapy_ppm_set(SoapySDRDevice *dev, double ppm_error);
 
 /*!
  * Find the closest matching device.
@@ -86,7 +86,7 @@ int verbose_ppm_set(SoapySDRDevice *dev, double ppm_error);
  * \return devOut, 0 if successful
  */
 
-int verbose_device_search(char const *s, SoapySDRDevice **devOut, const int direction);
+int soapy_device_search(char const *s, SoapySDRDevice **devOut, const int direction);
 
 /*!
  * Setup a stream on the device.
@@ -98,7 +98,7 @@ int verbose_device_search(char const *s, SoapySDRDevice **devOut, const int dire
  * \return streamOut, 0 if successful
  */
 
-int verbose_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const int direction, const char *format);
+int soapy_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const int direction, const char *format);
 
 /*!
  * Parse a comma-separated list of key/value pairs into SoapySDRKwargs

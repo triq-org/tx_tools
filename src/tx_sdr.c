@@ -1,5 +1,5 @@
 /** @file
-    tx_tools - tx_sdr, play data through SoapySDR TX.
+    tx_tools - tx_sdr, play data through SDR TX.
 
     Copyright (C) 2017 by Christian Zuckschwerdt <zany@triq.net>
 
@@ -40,6 +40,12 @@
 #include <getopt.h>
 #endif
 
+#ifdef _MSC_VER
+#define NORETURN __declspec(noreturn)
+#else
+#define NORETURN __attribute__((noreturn))
+#endif
+
 #include "optparse.h"
 #include "tx_lib.h"
 
@@ -48,9 +54,11 @@
 static void print_version()
 {
     fprintf(stderr,
-            "tx_sdr -- an I/Q player for SoapySDR devices.\n");
+            "tx_sdr -- an I/Q player for SDR devices.\n"
+            "Available backends: %s\n", tx_available_backends());
 }
 
+NORETURN
 static void usage(int exit_code)
 {
     fprintf(stderr,
@@ -176,7 +184,6 @@ int main(int argc, char **argv)
             break;
         default:
             usage(1);
-            break;
         }
     }
 
@@ -228,7 +235,10 @@ int main(int argc, char **argv)
         }
     }
 
-    r = tx_transmit(NULL, &tx);
+    tx_ctx_t ctx = {0};
+    tx_enum_devices(&ctx, tx.dev_query);
+    r = tx_transmit(&ctx, &tx);
+    tx_free_devices(&ctx);
 
     if (tx.stream_fd >= 0 && tx.stream_fd != fileno(stdin))
         close(tx.stream_fd);

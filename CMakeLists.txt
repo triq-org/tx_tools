@@ -18,46 +18,107 @@ include_directories(${PROJECT_SOURCE_DIR}/src/utils)
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 ########################################################################
-# Dependencies
+# Find SoapySDR
 ########################################################################
 find_package(SoapySDR "0.6" NO_MODULE)
-if (NOT SoapySDR_FOUND)
-    message(FATAL_ERROR "Soapy SDR development files not found...")
-endif ()
-include_directories(${SoapySDR_INCLUDE_DIRS})
-list(APPEND TX_TOOLS_LIBS ${SoapySDR_LIBRARIES})
+if(SoapySDR_FOUND)
+    message(STATUS "SoapySDR_INCLUDE_DIRS: ${SoapySDR_INCLUDE_DIRS}")
+    message(STATUS "SoapySDR_LIBRARIES: ${SoapySDR_LIBRARIES}")
+    message(STATUS "SoapySDR_DEFINITIONS: ${SoapySDR_DEFINITIONS}")
+    include_directories(${SoapySDR_INCLUDE_DIRS})
+    add_definitions(-DHAS_SOAPY)
+    list(APPEND TX_TOOLS_LIBS ${SoapySDR_LIBRARIES})
+    list(APPEND COMMON_SOURCES src/sdr/sdr_soapy.c)
+else()
+    message(STATUS "SoapySDR development files not found...")
+endif()
+
+########################################################################
+# Find LimeSuite
+########################################################################
+find_package(LimeSuite "19.04" NO_MODULE)
+if(LimeSuite_FOUND)
+    message(STATUS "LimeSuite_INCLUDE_DIRS: ${LimeSuite_INCLUDE_DIRS}")
+    message(STATUS "LimeSuite_LIBRARIES: ${LimeSuite_LIBRARIES}")
+    message(STATUS "LimeSuite_DEFINITIONS: ${LimeSuite_DEFINITIONS}")
+    include_directories(${LimeSuite_INCLUDE_DIRS})
+    add_definitions(-DHAS_LIME)
+    list(APPEND TX_TOOLS_LIBS ${LimeSuite_LIBRARIES})
+    list(APPEND COMMON_SOURCES src/sdr/sdr_lime.c)
+else()
+    message(STATUS "LimeSuite development files not found...")
+endif()
+
+########################################################################
+# Find libiio
+########################################################################
+find_package(libiio 0.9)
+if(LIBIIO_FOUND)
+    message(STATUS "LIBIIO_INCLUDE_DIRS: ${LIBIIO_INCLUDE_DIRS}")
+    message(STATUS "LIBIIO_LIBRARIES: ${LIBIIO_LIBRARIES}")
+    message(STATUS "LIBIIO_DEFINITIONS: ${LIBIIO_DEFINITIONS}")
+    include_directories(${LIBIIO_INCLUDE_DIRS})
+    add_definitions(-DHAS_IIO)
+    list(APPEND TX_TOOLS_LIBS ${LIBIIO_LIBRARIES})
+    list(APPEND COMMON_SOURCES src/sdr/sdr_pluto.c)
+else()
+    message(STATUS "LibIIO development files not found...")
+endif()
+
+########################################################################
+# Find libad9361
+########################################################################
+find_package(libad9361)
+if(LIBAD9361_FOUND)
+    message(STATUS "LIBAD9361_INCLUDE_DIRS: ${LIBAD9361_INCLUDE_DIRS}")
+    message(STATUS "LIBAD9361_LIBRARIES: ${LIBAD9361_LIBRARIES}")
+    message(STATUS "LIBAD9361_DEFINITIONS: ${LIBAD9361_DEFINITIONS}")
+    include_directories(${LIBAD9361_INCLUDE_DIRS})
+    add_definitions(-DHAS_AD9361_IIO)
+    list(APPEND TX_TOOLS_LIBS ${LIBAD9361_LIBRARIES})
+else()
+    message(STATUS "LibAD9361 development files not found...")
+endif()
+
+if(NOT SoapySDR_FOUND AND NOT LimeSuite_FOUND AND NOT LIBIIO_FOUND)
+    message(FATAL_ERROR "At least one of SoapySDR, LimeSuite, or LibIIO (Pluto) needed...")
+endif()
+
+########################################################################
+# Dependencies
+########################################################################
 
 #link with libm when available
 find_library(
     MATH_LIBRARIES NAMES m
     PATHS /usr/lib /usr/lib64
 )
-if (MATH_LIBRARIES)
+if(MATH_LIBRARIES)
     list(APPEND TX_TOOLS_LIBS ${MATH_LIBRARIES})
-endif ()
+endif()
 
 #link with pthreads
 set(THREADS_USE_PTHREADS_WIN32 true)
 find_package(Threads)
-if (NOT THREADS_FOUND)
+if(NOT THREADS_FOUND)
     message(FATAL_ERROR "pthreads development files not found...")
-endif ()
+endif()
 include_directories(${THREADS_PTHREADS_INCLUDE_DIR})
 list(APPEND TX_TOOLS_LIBS ${CMAKE_THREAD_LIBS_INIT})
 message(STATUS "THREADS_PTHREADS_INCLUDE_DIR: ${THREADS_PTHREADS_INCLUDE_DIR}")
 message(STATUS "CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 
 #windows getopt compatibility
-if (WIN32)
+if(WIN32)
     include_directories(${PROJECT_SOURCE_DIR}/src/getopt)
     list(APPEND COMMON_SOURCES src/getopt/getopt.c)
-endif ()
+endif()
 
 ########################################################################
 # Helper library
 ########################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
-list(APPEND COMMON_SOURCES src/sdr_soapy.c src/tx_lib.c)
+list(APPEND COMMON_SOURCES src/sdr/sdr_backend.c src/tx_lib.c)
 list(APPEND COMMON_SOURCES src/read_text.c src/tone_text.c src/code_text.c src/pulse_text.c src/transform.c src/iq_render.c src/sample.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
@@ -69,7 +130,7 @@ list(APPEND TX_TOOLS_LIBS common)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
+if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
@@ -95,7 +156,7 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES
     # make use of ASAN
     set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
 endif()
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
     ADD_DEFINITIONS(-Weverything)
@@ -104,6 +165,11 @@ if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(-Wno-documentation)
     ADD_DEFINITIONS(-Wno-missing-noreturn)
     ADD_DEFINITIONS(-Wno-bad-function-cast)
+endif()
+
+# skip warnings from iio.h and ad9361.h
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+	SET_SOURCE_FILES_PROPERTIES(src/sdr/sdr_pluto.c PROPERTIES COMPILE_FLAGS "-w -Wno-reserved-id-macro")
 endif()
 
 ########################################################################

@@ -6,6 +6,7 @@ BreakBeforeBinaryOperators: NonAssignment
 AlignAfterOpenBracket: DontAlign
 AlignEscapedNewlines: DontAlign
 AlignConsecutiveAssignments: true
+AlignOperands: false
 AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false
 ColumnLimit: 0
