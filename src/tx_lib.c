@@ -648,7 +648,7 @@ ssize_t tx_input_read(tx_ctx_t *tx_ctx, tx_cmd_t *tx, void *buf, size_t *out_sam
         n_read  = read(tx->stream_fd, tx->conv_buf.u8, sizeof(uint8_t) * 2 * tx->block_size);
         n_samps = n_read < 0 ? 0 : (size_t)n_read / sizeof(uint8_t) / 2;
         for (size_t i = 0; i < n_samps * 2; ++i) {
-            ((int16_t *)buf)[i] = (int16_t)((tx->conv_buf.u8[i] + 127.4) / 128.0 * fullScale);
+            ((int16_t *)buf)[i] = (int16_t)((tx->conv_buf.u8[i] - 127.4) / 128.0 * fullScale);
         }
     }
     else if (is_format_equal(tx->input_format, "CF32")) {
