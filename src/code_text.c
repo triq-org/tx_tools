@@ -252,6 +252,9 @@ char *parse_code_desc(char const *code)
 
     size_t len = strlen(code);
     char *desc = malloc(len);
+    if (!desc)
+        return NULL;
+    desc[0] = '\0';
 
     char const *p = code;
     while (*p) {

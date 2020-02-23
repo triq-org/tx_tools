@@ -44,6 +44,9 @@ char *read_text_fd(int fd, char const *file_hint)
         }
         n_offs += (size_t)n_read;
     }
+    // add zero termination
+    text = realloc((void *)text, n_offs + 1);
+    text[n_offs] = '\0';
 
     return text;
 }
