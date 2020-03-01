@@ -237,6 +237,7 @@ int main(int argc, char **argv)
 
     tx_ctx_t ctx = {0};
     tx_enum_devices(&ctx, tx.dev_query);
+    tx.dev_query = ""; // use the first available device
     r = tx_transmit(&ctx, &tx);
     tx_free_devices(&ctx);
 
