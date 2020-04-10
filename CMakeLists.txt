@@ -50,37 +50,37 @@ else()
 endif()
 
 ########################################################################
-# Find libiio
+# Find LibIIO
 ########################################################################
-find_package(libiio 0.9)
-if(LIBIIO_FOUND)
-    message(STATUS "LIBIIO_INCLUDE_DIRS: ${LIBIIO_INCLUDE_DIRS}")
-    message(STATUS "LIBIIO_LIBRARIES: ${LIBIIO_LIBRARIES}")
-    message(STATUS "LIBIIO_DEFINITIONS: ${LIBIIO_DEFINITIONS}")
-    include_directories(${LIBIIO_INCLUDE_DIRS})
+find_package(LibIIO 0.9)
+if(LibIIO_FOUND)
+    message(STATUS "LibIIO_INCLUDE_DIRS: ${LibIIO_INCLUDE_DIRS}")
+    message(STATUS "LibIIO_LIBRARIES: ${LibIIO_LIBRARIES}")
+    message(STATUS "LibIIO_DEFINITIONS: ${LibIIO_DEFINITIONS}")
+    include_directories(${LibIIO_INCLUDE_DIRS})
     add_definitions(-DHAS_IIO)
-    list(APPEND TX_TOOLS_LIBS ${LIBIIO_LIBRARIES})
+    list(APPEND TX_TOOLS_LIBS ${LibIIO_LIBRARIES})
     list(APPEND COMMON_SOURCES src/sdr/sdr_pluto.c)
 else()
     message(STATUS "LibIIO development files not found...")
 endif()
 
 ########################################################################
-# Find libad9361
+# Find LibAD9361
 ########################################################################
-find_package(libad9361)
-if(LIBAD9361_FOUND)
-    message(STATUS "LIBAD9361_INCLUDE_DIRS: ${LIBAD9361_INCLUDE_DIRS}")
-    message(STATUS "LIBAD9361_LIBRARIES: ${LIBAD9361_LIBRARIES}")
-    message(STATUS "LIBAD9361_DEFINITIONS: ${LIBAD9361_DEFINITIONS}")
-    include_directories(${LIBAD9361_INCLUDE_DIRS})
+find_package(LibAD9361)
+if(LibAD9361_FOUND)
+    message(STATUS "LibAD9361_INCLUDE_DIRS: ${LibAD9361_INCLUDE_DIRS}")
+    message(STATUS "LibAD9361_LIBRARIES: ${LibAD9361_LIBRARIES}")
+    message(STATUS "LibAD9361_DEFINITIONS: ${LibAD9361_DEFINITIONS}")
+    include_directories(${LibAD9361_INCLUDE_DIRS})
     add_definitions(-DHAS_AD9361_IIO)
-    list(APPEND TX_TOOLS_LIBS ${LIBAD9361_LIBRARIES})
+    list(APPEND TX_TOOLS_LIBS ${LibAD9361_LIBRARIES})
 else()
     message(STATUS "LibAD9361 development files not found...")
 endif()
 
-if(NOT SoapySDR_FOUND AND NOT LimeSuite_FOUND AND NOT LIBIIO_FOUND)
+if(NOT SoapySDR_FOUND AND NOT LimeSuite_FOUND AND NOT LibIIO_FOUND)
     message(FATAL_ERROR "At least one of SoapySDR, LimeSuite, or LibIIO (Pluto) needed...")
 endif()
 
@@ -100,7 +100,7 @@ endif()
 #link with pthreads
 set(THREADS_USE_PTHREADS_WIN32 true)
 find_package(Threads)
-if(NOT THREADS_FOUND)
+if(NOT Threads_FOUND)
     message(FATAL_ERROR "pthreads development files not found...")
 endif()
 include_directories(${THREADS_PTHREADS_INCLUDE_DIR})
