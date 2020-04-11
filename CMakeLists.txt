@@ -122,7 +122,7 @@ list(APPEND COMMON_SOURCES src/sdr/sdr_backend.c src/tx_lib.c)
 list(APPEND COMMON_SOURCES src/read_text.c src/tone_text.c src/code_text.c src/pulse_text.c src/transform.c src/iq_render.c src/sample.c)
 list(APPEND COMMON_SOURCES src/utils/optparse.c)
 add_library(common STATIC ${COMMON_SOURCES})
-list(APPEND TX_TOOLS_LIBS common)
+list(INSERT TX_TOOLS_LIBS 0 common)
 
 ########################################################################
 # Compiler specific setup
