@@ -57,6 +57,9 @@ char const *sdr_ctx_available_backends()
 
 int sdr_ctx_enum_devices(sdr_ctx_t *sdr_ctx, const char *enum_args)
 {
+    if (!sdr_ctx) return -1;
+    if (!enum_args) enum_args = "";
+
     int ret = -1;
 
     if (!sdr_ctx->devs) {
@@ -83,6 +86,8 @@ int sdr_ctx_enum_devices(sdr_ctx_t *sdr_ctx, const char *enum_args)
 
 int sdr_ctx_release_devices(sdr_ctx_t *sdr_ctx)
 {
+    if (!sdr_ctx) return -1;
+
     int ret = 0;
 
     for (size_t i = 0; i < sdr_ctx->devs_len; i++) {
@@ -95,6 +100,8 @@ int sdr_ctx_release_devices(sdr_ctx_t *sdr_ctx)
 
 int sdr_ctx_free_devices(sdr_ctx_t *sdr_ctx)
 {
+    if (!sdr_ctx) return -1;
+
     int ret = 0;
 
     for (size_t i = 0; i < sdr_ctx->devs_len; i++) {

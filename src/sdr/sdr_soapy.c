@@ -35,6 +35,7 @@
 
 #include <math.h>
 
+#include <SoapySDR/Version.h>
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 
@@ -289,7 +290,16 @@ int soapy_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const in
 	// request exactly the first channel, e.g. SoapyPlutoSDR has strange ideas about "the default channel"
 	size_t channels[] = {0};
 	size_t numChanns = 1;
-	if (SoapySDRDevice_setupStream(dev, streamOut, direction, format, channels, numChanns, &stream_args) != 0) {
+#if SOAPY_SDR_API_VERSION >= 0x00080000
+	// API version 0.8
+#undef SoapySDRDevice_setupStream
+	*streamOut = SoapySDRDevice_setupStream(dev, direction, format, channels, numChanns, &stream_args);
+	int r = *streamOut == NULL;
+#else
+	// API version 0.7
+	int r = SoapySDRDevice_setupStream(dev, streamOut, direction, format, channels, numChanns, &stream_args);
+#endif
+	if (r != 0) {
 		fprintf(stderr, "SoapySDRDevice_setupStream failed\n");
 		return -3;
 	}
