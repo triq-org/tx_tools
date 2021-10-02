@@ -88,16 +88,21 @@ endif()
 # Dependencies
 ########################################################################
 
-#link with libm when available
-find_library(
-    MATH_LIBRARIES NAMES m
-    PATHS /usr/lib /usr/lib64
-)
-if(MATH_LIBRARIES)
-    list(APPEND TX_TOOLS_LIBS ${MATH_LIBRARIES})
+# Link with libm when available
+find_library(MATH_LIBRARY m)
+message(STATUS "MATH_LIBRARY: ${MATH_LIBRARY}")
+if(MATH_LIBRARY)
+    list(APPEND TX_TOOLS_LIBS -lm)
 endif()
 
-#link with pthreads
+# Link with librt (for clock_*) when available
+find_library(RT_LIBRARY rt)
+message(STATUS "RT_LIBRARY: ${RT_LIBRARY}")
+if(RT_LIBRARY)
+    list(APPEND TX_TOOLS_LIBS -Wl,--no-as-needed -lrt)
+endif()
+
+# Link with pthreads
 set(THREADS_USE_PTHREADS_WIN32 true)
 find_package(Threads)
 if(NOT Threads_FOUND)
