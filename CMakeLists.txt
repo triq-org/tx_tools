@@ -223,6 +223,17 @@ add_executable(byte-stat src/byte-stat.c)
 # Install executables
 ########################################################################
 install(TARGETS tx_sdr DESTINATION bin)
+install(TARGETS pulse_gen DESTINATION bin)
+install(TARGETS code_gen DESTINATION bin)
+install(TARGETS code_dump DESTINATION bin)
+install(TARGETS example_gen DESTINATION bin)
+install(TARGETS fast_osc_tests DESTINATION bin)
+install(TARGETS encode_ascii DESTINATION bin)
+install(TARGETS encode_hex DESTINATION bin)
+install(TARGETS encode_dmc DESTINATION bin)
+install(TARGETS encode_mc DESTINATION bin)
+install(TARGETS encode_imc DESTINATION bin)
+install(TARGETS byte-stat DESTINATION bin)
 
 ########################################################################
 # Build tests with analyzer
