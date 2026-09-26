@@ -127,7 +127,7 @@ int tx_free_devices(tx_ctx_t *tx_ctx);
 int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
 
 /// Print transmit data (debug).
-void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx);
+void tx_print(tx_ctx_t const *tx_ctx, tx_cmd_t const *tx);
 
 /// Free transmit data.
 void tx_cmd_free(tx_cmd_t *tx);

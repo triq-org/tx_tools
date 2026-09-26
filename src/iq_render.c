@@ -506,6 +506,11 @@ static inline void add_sine(ctx_t *ctx, double freq_hz, size_t time_us, int db, 
         ctx->signal_out(ctx, i, q);
         signal_out_maybe_flush(ctx);
     }
+
+    // undo phase offset
+    if (ph) {
+        ctx->phi -= 11930465 * (uint32_t)ph; // (0x100000000 / 360)
+    }
 }
 
 // api

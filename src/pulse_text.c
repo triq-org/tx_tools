@@ -182,7 +182,7 @@ void pulse_setup_defaults(pulse_setup_t *params, char const *name)
         params->att_mark    = -1;
         params->att_space   = -1;
         params->phase_mark  = 180;
-        params->phase_space = 180;
+        params->phase_space = 0;
     }
     else {
         // OOK
@@ -196,7 +196,7 @@ void pulse_setup_defaults(pulse_setup_t *params, char const *name)
     }
 }
 
-void pulse_setup_print(pulse_setup_t *params)
+void pulse_setup_print(pulse_setup_t const *params)
 {
     printf(";timescale %uus\n", 1000000 / params->time_base); // TODO: adapt to "ns"?
     printf(";time_base %u\n", params->time_base);

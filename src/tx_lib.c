@@ -162,7 +162,7 @@ int tx_transmit(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
     return r;
 }
 
-void tx_print(tx_ctx_t *tx_ctx, tx_cmd_t *tx)
+void tx_print(tx_ctx_t const *tx_ctx, tx_cmd_t const *tx)
 {
     printf("TX command:\n");
     printf("  device selection\n");

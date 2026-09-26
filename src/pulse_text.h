@@ -37,7 +37,7 @@ typedef struct pulse_setup {
 
 void pulse_setup_defaults(pulse_setup_t *params, char const *name);
 
-void pulse_setup_print(pulse_setup_t *params);
+void pulse_setup_print(pulse_setup_t const *params);
 
 tone_t *parse_pulses(char const *pulses, pulse_setup_t *defaults);
 
