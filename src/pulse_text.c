@@ -136,7 +136,7 @@ static int parse_len(char const **buf)
         exit(1);
     }
 
-    if (val < -0x80000000 || val >= 0x80000000 ) {
+    if (val < -0x80000000l || val > 0x7fffffffl) {
         fprintf(stderr, "out of range number argument (%f)\n", val);
         exit(1);
     }
@@ -199,7 +199,7 @@ void pulse_setup_defaults(pulse_setup_t *params, char const *name)
 void pulse_setup_print(pulse_setup_t *params)
 {
     printf(";timescale %uus\n", 1000000 / params->time_base); // TODO: adapt to "ns"?
-    printf(";time_base %d\n", params->time_base);
+    printf(";time_base %u\n", params->time_base);
     printf(";freq_mark %d\n", params->freq_mark);
     printf(";freq_space %d\n", params->freq_space);
     printf(";att_mark %d\n", params->att_mark);

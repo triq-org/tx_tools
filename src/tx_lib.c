@@ -76,8 +76,8 @@ preset_t *tx_presets_load(tx_ctx_t *tx_ctx, char const *dir_name)
     preset_t *presets = calloc(100, sizeof(*presets));
     unsigned i = 0;
 
-    char path[256];
-    struct dirent *ent;
+    char path[2048];
+    struct dirent const *ent;
     while ((ent = readdir(dir)) != NULL) {
         printf("%s\n", ent->d_name);
         // TODO: check if really a preset file

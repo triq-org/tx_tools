@@ -203,8 +203,8 @@ int main(int argc, char **argv)
     if (spec.frame_size < MINIMAL_BUF_LENGTH ||
             spec.frame_size > MAXIMAL_BUF_LENGTH) {
         fprintf(stderr, "Output block size wrong value, falling back to default\n");
-        fprintf(stderr, "Minimal length: %u\n", MINIMAL_BUF_LENGTH);
-        fprintf(stderr, "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
+        fprintf(stderr, "Minimal length: %d\n", MINIMAL_BUF_LENGTH);
+        fprintf(stderr, "Maximal length: %d\n", MAXIMAL_BUF_LENGTH);
         spec.frame_size = DEFAULT_BUF_LENGTH;
     }
 

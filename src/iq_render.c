@@ -557,7 +557,7 @@ static void iq_render_init(ctx_t *ctx, iq_render_t *spec)
         spec->frame_size = DEFAULT_BUF_LENGTH;
 
     if (spec->sample_format < FORMAT_CU4 || spec->sample_format > FORMAT_CF64) {
-        fprintf(stderr, "Bad sample format (%d).\n",
+        fprintf(stderr, "Bad sample format (%u).\n",
                 spec->sample_format);
         exit(1);
     }

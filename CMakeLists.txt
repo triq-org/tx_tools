@@ -1,7 +1,7 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 2.8.12...3.10)
 project(tx_tools C)
 
 #select the release build type by default to get optimization flags
@@ -155,6 +155,12 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wformat-nonliteral)
     ADD_DEFINITIONS(-Wformat-security)
     ADD_DEFINITIONS(-Wno-padded)
+    # implicit conversion on malloc
+    ADD_DEFINITIONS(-Wno-implicit-void-ptr-cast)
+    # ignore size_t to double
+    ADD_DEFINITIONS(-Wno-implicit-int-float-conversion)
+    # allow switch without 'default' label
+    ADD_DEFINITIONS(-Wno-switch-default)
     # strdup, sigaction need -D_XOPEN_SOURCE=700 or -D_POSIX_C_SOURCE=200809L
     # strsep, strcasecmp need
     ADD_DEFINITIONS(-D_DEFAULT_SOURCE)
@@ -165,8 +171,10 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
 
-    # make use of ASAN
-    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
+    # make use of ASAN only on Linux
+    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fno-omit-frame-pointer")
+    add_compile_options($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
+    link_libraries($<$<AND:$<CONFIG:Debug>,$<PLATFORM_ID:Linux>>:-fsanitize=undefined$<SEMICOLON>-fsanitize=address>)
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
@@ -178,6 +186,7 @@ if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     ADD_DEFINITIONS(-Wno-documentation)
     ADD_DEFINITIONS(-Wno-missing-noreturn)
     ADD_DEFINITIONS(-Wno-bad-function-cast)
+    ADD_DEFINITIONS(-Wno-unsafe-buffer-usage)
 endif()
 
 # skip warnings from iio.h and ad9361.h

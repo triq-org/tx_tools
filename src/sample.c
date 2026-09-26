@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
 
 // format is 3-4 chars (plus null), compare as int.
 static int is_format_equal(const void *a, const void *b)
@@ -79,6 +80,7 @@ size_t sample_format_length(enum sample_format format)
     case FORMAT_CF64:
         return 2 * sizeof(double);
     }
+    assert(0);
     return 2 * sizeof(uint8_t);
 }
 
@@ -116,6 +118,7 @@ char const *sample_format_str(enum sample_format format)
     case FORMAT_CF64:
         return "CF64";
     }
+    assert(0);
     return "unknown";
 }
 

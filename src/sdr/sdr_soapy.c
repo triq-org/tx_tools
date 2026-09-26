@@ -288,7 +288,7 @@ int soapy_setup_stream(SoapySDRDevice *dev, SoapySDRStream **streamOut, const in
 	SoapySDRKwargs stream_args = {0};
 
 	// request exactly the first channel, e.g. SoapyPlutoSDR has strange ideas about "the default channel"
-	size_t channels[] = {0};
+	size_t const channels[] = {0};
 	size_t numChanns = 1;
 #if SOAPY_SDR_API_VERSION >= 0x00080000
 	// API version 0.8
@@ -469,7 +469,7 @@ int soapy_transmit(sdr_ctx_t *sdr_ctx, sdr_dev_t *sdr_dev, sdr_cmd_t *tx)
 {
     SoapySDRDevice *dev    = sdr_dev->device;
     SoapySDRStream *stream = NULL;
-    uint8_t *txbuf         = {0};
+    uint8_t *txbuf;
     int r;
 
     size_t sample_size = SoapySDR_formatToSize(tx->output_format);
@@ -482,7 +482,14 @@ int soapy_transmit(sdr_ctx_t *sdr_ctx, sdr_dev_t *sdr_dev, sdr_cmd_t *tx)
     r = soapy_setup_stream(dev, &stream, SOAPY_SDR_TX, tx->output_format);
     if (r != 0) {
         fprintf(stderr, "Failed to setup sdr stream '%s'.\n", tx->output_format);
-        goto out;
+
+        if (stream) {
+            SoapySDRDevice_closeStream(dev, stream);
+        }
+
+        free(txbuf);
+
+        return r >= 0 ? r : -r;
     }
 
     fprintf(stderr, "Using input format: %s (output format %s)\n", tx->input_format, tx->output_format);
@@ -545,7 +552,15 @@ int soapy_transmit(sdr_ctx_t *sdr_ctx, sdr_dev_t *sdr_dev, sdr_cmd_t *tx)
     r                   = SoapySDRDevice_activateStream(dev, stream, 0, 0, 0);
     if (r != 0) {
         fprintf(stderr, "Failed to activate stream\n");
-        goto out;
+
+        if (stream) {
+            SoapySDRDevice_deactivateStream(dev, stream, 0, 0);
+            SoapySDRDevice_closeStream(dev, stream);
+        }
+
+        free(txbuf);
+
+        return r >= 0 ? r : -r;
     }
 
     // TODO: save current gain
@@ -641,7 +656,6 @@ int soapy_transmit(sdr_ctx_t *sdr_ctx, sdr_dev_t *sdr_dev, sdr_cmd_t *tx)
     else if (r)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-out:
     if (stream) {
         SoapySDRDevice_deactivateStream(dev, stream, 0, 0);
         SoapySDRDevice_closeStream(dev, stream);
