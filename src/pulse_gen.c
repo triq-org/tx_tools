@@ -65,7 +65,7 @@ static void usage(int exitcode)
             "\t[-h] Output this usage help and exit\n"
             "\t[-V] Output the version string and exit\n"
             "\t[-v] Increase verbosity (can be used multiple times).\n"
-            "\t[-s sample_rate (default: 2048000 Hz)]\n"
+            "\t[-s sample_rate (default: %d Hz)]\n"
             "\t[-m OOK|ASK|FSK|PSK] preset mode defaults\n"
             "\t[-f|-F frequency Hz] set default mark|space frequency\n"
             "\t[-a|-A attenuation dB] set default mark|space attenuation\n"
@@ -83,7 +83,8 @@ static void usage(int exitcode)
             "\t[-t pulse_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
             "\t[-M full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
-            "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
+            "\t[-w file] write samples to file ('-' writes to stdout)\n\n",
+            DEFAULT_SAMPLE_RATE);
     exit(exitcode);
 }
 

@@ -62,7 +62,7 @@ static void usage(int exitcode)
     fprintf(stderr,
             "\ncode_gen, a simple I/Q waveform generator\n\n"
             "Usage:"
-            "\t[-s sample_rate (default: 2048000 Hz)]\n"
+            "\t[-s sample_rate (default: %d Hz)]\n"
             "\t[-f frequency Hz] adds a base frequency (use twice with e.g. 2FSK)\n"
             "\t[-n noise floor dBFS or multiplier]\n"
             "\t[-N noise on signal dBFS or multiplier]\n"
@@ -77,7 +77,8 @@ static void usage(int exitcode)
             "\t[-t code_text] parse given code text\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
             "\t[-M full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
-            "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
+            "\t[-w file] write samples to file ('-' writes to stdout)\n\n",
+            DEFAULT_SAMPLE_RATE);
     exit(exitcode);
 }
 

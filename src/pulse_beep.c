@@ -64,7 +64,7 @@ static void usage(int exitcode)
             "\t[-h] Output this usage help and exit\n"
             "\t[-V] Output the version string and exit\n"
             "\t[-v] Increase verbosity (can be used multiple times).\n"
-            "\t[-s sample_rate (default: 2048000 Hz)]\n"
+            "\t[-s sample_rate (default: %d Hz)]\n"
             "\t[-f frequency Hz] add new beep frequency\n"
             "\t[-a attenuation dB] set beep attenuation\n"
             "\t[-l time ms] set beep length\n"
@@ -80,7 +80,8 @@ static void usage(int exitcode)
             "\t[-b output_block_size (default: 16 * 16384) bytes]\n"
             "\t[-S rand_seed] set random seed for reproducible output\n"
             "\t[-M full_scale] limit the output full scale, e.g. use -F 2048 with CS16\n"
-            "\t[-w file] write samples to file ('-' writes to stdout)\n\n");
+            "\t[-w file] write samples to file ('-' writes to stdout)\n\n",
+            DEFAULT_SAMPLE_RATE);
     exit(exitcode);
 }
 

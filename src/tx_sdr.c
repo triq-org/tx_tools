@@ -63,7 +63,7 @@ static void usage(int exit_code)
 {
     fprintf(stderr,
             "\nUsage:\t -f frequency_to_tune_to [Hz]\n"
-            "\t[-s samplerate (default: 2048000 Hz)]\n"
+            "\t[-s samplerate (default: %d Hz)]\n"
             "\t[-d device key/value query (ex: 0, 1, driver=lime, driver=hackrf)]\n"
             "\t[-g tuner gain(s) (ex: 20, 40, PAD=-10)]\n"
             "\t[-a antenna (ex: BAND2)]\n"
@@ -79,7 +79,8 @@ static void usage(int exit_code)
             "\t[-v] Increase verbosity (can be used multiple times)\n"
             "\t\t-v : verbose, -vv : debug, -vvv : trace\n"
             "\t[-h] Output this usage help and exit\n"
-            "\tfilename (a '-' reads samples from stdin)\n\n");
+            "\tfilename (a '-' reads samples from stdin)\n\n",
+            DEFAULT_SAMPLE_RATE);
     exit(exit_code);
 }
 
