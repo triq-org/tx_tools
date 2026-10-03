@@ -9,3 +9,6 @@
 build*/
 
 tx_sdr
+
+/.vscode
+/.history
